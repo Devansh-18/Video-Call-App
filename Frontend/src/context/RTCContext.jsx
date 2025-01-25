@@ -1,4 +1,4 @@
-import React, { createContext, useRef, useState, useEffect } from "react";
+import React, { createContext, useRef, useState } from "react";
 import { useSocket } from "./SocketContext";
 
 const RTCContext = createContext();
@@ -14,9 +14,6 @@ export default function RTCProvider ({ children }){
 
     pc.onnegotiationneeded = async () => {
       try {
-        console.log("Negotiation needed");
-        console.log(`from user ${userId}`);
-        console.log(`this is pc -> ${pc}`);
         const offer = await pc.createOffer();
         await pc.setLocalDescription(offer);
         if(socket){
@@ -63,7 +60,7 @@ export default function RTCProvider ({ children }){
     const senders = pc.getSenders();
     const trackIds = senders.map((sender) => sender.track?.id);
   
-    localStream.getTracks().forEach((track) => {
+    localStream && localStream.getTracks().forEach((track) => {
       if (!trackIds.includes(track.id)) {
         pc.addTrack(track, localStream);
       }

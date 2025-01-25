@@ -4,12 +4,21 @@ import './index.css'
 import {BrowserRouter} from 'react-router-dom'
 import {Toaster} from 'react-hot-toast'
 import App from './App.jsx'
+import RTCProvider from './context/RTCContext.jsx'
+import SocketContextProvider from './context/SocketContext.jsx'
+import AppContextProvider from './context/AppContext.jsx'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <BrowserRouter>
-      <App />
-      <Toaster/>
+      <SocketContextProvider>
+        <RTCProvider>
+          <AppContextProvider>
+              <App />
+              <Toaster/>
+          </AppContextProvider>
+        </RTCProvider>
+      </SocketContextProvider>
     </BrowserRouter>
   </StrictMode>,
 )

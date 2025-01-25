@@ -1,29 +1,26 @@
 import React, { useEffect, useRef, useState } from "react";
 import {toast} from "react-hot-toast";
+import { MdOutlineScreenShare, MdOutlineStopScreenShare } from "react-icons/md";
 import { FaMicrophone, FaMicrophoneSlash, FaPhone, FaPhoneSlash, FaVideo, FaVideoSlash } from "react-icons/fa";
 import { MdCallEnd } from "react-icons/md";
 import { useSocket } from "../../context/SocketContext";
 import { useRTC } from "../../context/RTCContext";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import { useMemo } from "react";
+import { useApp } from "../../context/AppContext";
+import ChatCompo from "../ChatCompo";
 
 const VideoCall = () => {
-  const location = useLocation();
-  const { username, roomId } = location.state || {};
   const {socket} = useSocket();
-  const {peerConnections, getPeerConnection, addTracksToConnection, remoteStreams,setRemoteStreams } = useRTC();  // RTC functions from RTCContext
+  const {username,roomId,userID,setUserID,isChatVisible,remoteUsers,setRemoteUsers} = useApp();
+  const {peerConnections, getPeerConnection, addTracksToConnection, remoteStreams,setRemoteStreams} = useRTC();  // RTC functions from RTCContext
   const [localStream, setLocalStream] = useState(null);
-  const [userId, setUserId] = useState(null);
   const [isMuted, setIsMuted] = useState(false);
   const [isVideoOn, setIsVideoOn] = useState(true);
-  const [remoteAudioState,setRemoteAudioState] = useState(true);
-  const [remoteVideoState,setRemoteVideoState] = useState(true);
   const navigate = useNavigate();
-  const localVideoRef = useRef();
-  const screenSharingRef = useRef();
+  const localVideoRef = useRef(null);
+  const screenSharingRef = useRef(null);
   const [isScreenSharing,setIsScreenSharing] = useState(false);
-  const [chat,setChat] = useState([]);
-  const [message,setMessage] = useState('');
-  const [isChatVisible,setIsChatVisible] = useState(false);
 
   useEffect(() => {
     // Request access to the user's media (video and audio)
@@ -34,6 +31,8 @@ const VideoCall = () => {
           localVideoRef.current.srcObject = stream;
         }
         setLocalStream(stream);
+        console.log("stream",stream);
+        socket.emit("join-room", { roomId,username });
       })
       .catch((error) => {
         console.error("Error accessing media devices:", error);
@@ -43,30 +42,32 @@ const VideoCall = () => {
   }, []);
 
   useEffect(() => {
-    if (!socket || !localStream) return;
+    if (!socket ) return;
 
-    socket.emit("join-room", { roomId,username });
 
     // Listen for the "user-id" event and set the userId state with the received ID
-    socket.on("user-id", (id) => {
-      setUserId(id);
-    });
-
-    //Current Chat History for the room
-    socket.on("chat-history",(messages)=>{
-      setChat(messages);
+    socket.on("user-id", ({id,users}) => {
+      console.log("user-id",id);
+      setUserID(id);
+      const filteredUsers = users.filter(user => user.userId !== id);
+      console.log("remoteUsers",filteredUsers);
+      setRemoteUsers(filteredUsers);
     });
 
     // Listen for the "user-joined" event
-    socket.on("user-joined", (userId) => {
+    socket.on("user-joined", ({userId,users}) => {
+      console.log("userID -> ",userID);
+      const filteredUsers = users.filter(user => user.userId !== userID);
+      console.log("filtered users",filteredUsers);
+      setRemoteUsers(filteredUsers);
       if (localStream) {
         // When another user joins, add tracks to the peer connection for this user
         addTracksToConnection(userId, localStream);
-      }
+      }   
     })
 
     // Handle the signaling process for WebRTC (offer, answer, ice candidates)
-    socket.on("signal", async ({ sender, offer, answer, candidate }) => {
+    socket.on("signal", async ({ sender, offer, answer, candidate}) => {
       const pc = getPeerConnection(sender);
       addTracksToConnection(sender,localStream);
 
@@ -87,52 +88,50 @@ const VideoCall = () => {
     });
 
     //toggling media
-    socket.on("toogle",({audioState,videoState})=>{
-      setRemoteAudioState(audioState);
-      setRemoteVideoState(videoState);
-    })
+    socket.on("toggle", ({ audioState, videoState, remoteId }) => {
+      setRemoteStreams((prevStreams) => {
+        const updatedStream = prevStreams[remoteId]?.stream;
+    
+        if (updatedStream) {
+          const remoteAudioTrack = updatedStream.getAudioTracks()[0];
+          const remoteVideoTrack = updatedStream.getVideoTracks()[0];
+    
+          if (remoteAudioTrack) remoteAudioTrack.enabled = audioState;
+          if (remoteVideoTrack) remoteVideoTrack.enabled = videoState;
+        }
+    
+        return prevStreams; // No need to store audioState and videoState, we only modify the stream
+      });
+    });
+    
 
     //Socket for Leaving Room
-    socket.on("leave-room", (userId)=>{
+    socket.on("leave-room", ({id,users})=>{
       // Retrieve and close the peer connection for the user
-      const pc = getPeerConnection(userId);
+      const pc = getPeerConnection(id);
       if (pc) {
         pc.close(); // Close the peer connection
-        console.log(`Peer connection closed for user: ${userId}`);
+        console.log(`Peer connection closed for user: ${id}`);
       }
 
       // Remove the user's video/audio stream from the UI
       setRemoteStreams((prevStreams) => {
         const updatedStreams = { ...prevStreams };
-        delete updatedStreams[userId];
+        delete updatedStreams[id];
         return updatedStreams;
       });
-    });
-
-    // Handle message receive 
-    socket.on('newMessage', (message) => {
-      console.log('newMessage->',message);
-      setChat((prev) => [...prev, message]);
+      const filteredUsers = users.filter(user => (user.userId !== id && user.userId !== userID));
+      setRemoteUsers(filteredUsers);
     });
 
     return () => {
+      socket.off("user-id");
       socket.off("user-joined");
-      socket.off("chat-history");
       socket.off("signal");
-      socket.off("toogle");
+      socket.off("toggle");
       socket.off("leave-room");
-      socket.off("newMessage");
     };
-  }, [socket, localStream, roomId]);
-
-  //sending message
-  const sendMessage = () => {
-    console.log("Sending message->",message);
-    if (message && roomId) {
-      socket.emit('message', { sender:userId, message, roomId });
-      setMessage('');
-    }
-  };
+  }, [socket,localStream, roomId]);
 
   // Function to handle disconnecting the call
   const disconnectCall = () => {
@@ -156,7 +155,7 @@ const VideoCall = () => {
         audioTrack.enabled = true;
         setIsMuted(false);
       }
-      socket.emit("toogle",{roomId,isMuted,isVideoOn});
+      socket.emit("toggle",{roomId,isMuted,isVideoOn});
     }
   };
 
@@ -172,7 +171,7 @@ const VideoCall = () => {
         videoTrack.enabled = true;
         setIsVideoOn(true);
       }
-      socket.emit("toogle",{roomId,isMuted,isVideoOn});
+      socket.emit("toggle",{roomId,isMuted,isVideoOn});
     }
   };
 
@@ -254,48 +253,87 @@ const VideoCall = () => {
       }
     }
   };
+
+  // Dynamically calculate grid style for any number of streams
+  const calculateGridStyle = (count) => {
+    console.log(count);
+    if (count === 0) return "grid-cols-1 grid-rows-1"; // No streams
+    const columns = Math.ceil(Math.sqrt(count)); // Number of columns
+    const rows = Math.ceil(count / columns); // Number of rows
+    console.log("columns ",columns,"rows ",rows);
+    return `repeat(${columns},1fr)`;
+  };
+  const gridStyle = useMemo(() => {
+    const count = remoteUsers.length + 1; // Add 1 for local stream
+    return calculateGridStyle(count);
+  }, [remoteUsers.length]);
+
   
   return (
-    <div className="flex p-4 items-center justify-center overflow-hidden w-screen h-screen bg-gradient-to-br from-gray-900 to-gray-700 text-white">
-      <div className="relative flex gap-4 max-w-full max-h-full justify-center items-center flex-wrap">
+    <div className="relative flex p-4 items-center justify-center overflow-hidden w-screen h-screen bg-gradient-to-br from-gray-900 to-gray-700 text-white">
+      <div className={`relative gap-4 ${isChatVisible?"md:w-2/3":"w-full"} h-[90%] items-center justify-center`}
+      style={{ display: 'grid', gridTemplateColumns: `${gridStyle}` }}>
+      {console.log(gridStyle)}
         {/* Local Video Stream */}
-        <div className="rounded-lg border-4 border-blue-500 shadow-stream-glow">
+        <div className="relative rounded-lg border-4 w-auto overflow-hidden flex justify-center items-center border-blue-500 shadow-stream-glow">
           {localStream ? (
             <video
               ref={localVideoRef}
-              className="object-cover"
+              className="w-auto h-auto max-w-full max-h-full object-cover"
               autoPlay
               muted
             />
           ) : (
-            <div className="object-cover">
+            <div className="w-auto h-auto min-w-full">
               Loading local stream...
             </div>
           )}
+          <div className="absolute top-2 left-2 z-50 bg-black bg-opacity-50 text-white px-2 py-1 rounded">
+            {username} Me
+          </div>
         </div>
 
         {/* Remote Video Streams */}
-          {Object.entries(remoteStreams).length > 0 ? (
-            Object.entries(remoteStreams).map(([userId, stream]) => (
-              <div key={userId} className="rounded-lg border-4 border-white shadow-stream-glow">
-                  <video
-                    ref={(video) => {
-                      if (video && stream && video.srcObject !== stream) video.srcObject = stream;
-                    }}
-                    className="object-cover"
-                    autoPlay
-                  />
-              </div>
-            ))
-          ) : (
-            <div className="rounded-lg border-4 border-white shadow-stream-glow">
-              No remote users connected
-            </div>
+          {Object.entries(remoteStreams).length > 0 && (
+            Object.entries(remoteStreams).map(([userId, stream]) => {
+              // Get the audio and video tracks of the stream
+              const audioTrack = stream.getAudioTracks()[0];
+              const videoTrack = stream.getVideoTracks()[0];
+              const remoteUsername = remoteUsers.find(user => user.userId === userId)?.username || "Unknown User";
+              return (
+                <div key={userId} className="relative w-auto overflow-hidden flex items-center justify-center rounded-lg border-4 order-white shadow-stream-glow">
+                  {videoTrack && videoTrack.enabled ? (
+                    <video
+                      ref={(video) => {
+                        if (video && stream && video.srcObject !== stream) video.srcObject = stream;
+                      }}
+                      className="max-w-full max-h-full h-auto w-auto object-cover"
+                      autoPlay
+                    />
+                  ):
+                  (
+                    <div className="overflow-hidden max-w-full max-h-full w-auto h-auto object-cover bg-slate-500 blur-lg">
+                      <image src={`https://api.dicebar.com/5.x/initials/svg?seed=${remoteUsername}`}/>
+                    </div>
+                  )}
+                    {audioTrack && !audioTrack.enabled && (
+                      <div className="absolute top-[50%] left-0 bg-slate-300 blur-md bg-blend-screen p-2 text-white rounded-full">
+                        {remoteUsername} is muted
+                      </div>
+                    )}
+                  
+                  <div className="absolute top-2 left-2 z-50 bg-black bg-opacity-50 text-white px-2 py-1 rounded">
+                    {remoteUsername}
+                  </div>
+
+                </div>
+              )
+            })
           )}
       </div>
 
       {/* Controls: Mute/Unmute, Video On/Off */}
-      <div className=" bottom-8 left-0 right-0 flex justify-center space-x-4">
+      <div className={`absolute left-0 bottom-8 ${isChatVisible?"w-2/3":"w-full"} flex item-center justify-center space-x-4`}>
         <button
           onClick={toggleMute}
           className="bg-red-500 hover:bg-red-600 text-white py-3 px-6 rounded-lg shadow-md text-lg font-semibold flex items-center justify-center"
@@ -313,7 +351,7 @@ const VideoCall = () => {
           onClick={toggleScreenSharing}
           className="bg-blue-500 hover:bg-blue-600 text-white py-3 px-6 rounded-lg shadow-md text-lg font-semibold flex items-center justify-center"
         >
-          {isScreenSharing ? <FaPhone size={24} /> : <FaPhoneSlash size={24} />}
+          {isScreenSharing ? <MdOutlineScreenShare size={24} /> : <MdOutlineStopScreenShare size={24} />}
         </button>
         
         <button
@@ -325,42 +363,20 @@ const VideoCall = () => {
       </div>
 
       {/* Chat UI */}
-      {isChatVisible && (
-        <div className="w-1/3 bg-slate-700 h-full shadow-lg flex flex-col">
-          <div className="flex-grow overflow-y-auto p-4">
-            {chat.map((msg, index) => (
-              <div key={index} className="mb-2">
-                <strong className="text-blue-600">{msg.userId}:</strong> {msg.message}{' '}
-                <em className="text-gray-500 text-sm">({new Date(msg.timestamp).toLocaleTimeString()})</em>
-              </div>
-            ))}
-          </div>
-    
-          <div className="p-4 flex flex-col text-black border-gray-300">
-            <input
-              type="text"
-              className="w-full border rounded-lg p-2 mb-2"
-              placeholder="Enter your message"
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-            />
-            <button
-              onClick={sendMessage}
-              className="w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-700">
-              Send
-            </button>
-          </div>
-        </div>
-      )}
+      <ChatCompo/>
 
-      {/* Toggle Chat Button */}
-      <button
-        onClick={() => setIsChatVisible(!isChatVisible)}
-        className="absolute top-4 right-4 bg-blue-500 text-white px-4 py-2 rounded-lg shadow-md hover:bg-blue-600">
-        {isChatVisible ? 'Hide Chat' : 'Show Chat'}
-      </button>
+      <div className="absolute bg-slate-900 top-0 left-0 text-white flex flex-col items-start justify-start">
+        <h1>Remote Users</h1>
+        <ul className="flex flex-col items-start justify-start">
+          {remoteUsers.map(({userId, username}) => (
+            <li className="p-2" key={userId}>
+              {userId}: {username}
+            </li>
+          ))}
+        </ul>
+      </div>
     </div>
   );
 };
 
-export default VideoCall;
+export default VideoCall

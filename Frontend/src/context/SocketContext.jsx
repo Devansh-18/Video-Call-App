@@ -3,9 +3,6 @@ import {io} from "socket.io-client";
 
 export const SocketContext = createContext();
 
-export const useSocket = ()=>{
-    return useContext(SocketContext);
-}
 
 export default function SocketContextProvider(props){
     
@@ -18,3 +15,5 @@ export default function SocketContextProvider(props){
         {props.children}
     </SocketContext.Provider>
 }
+
+export const useSocket = ()=>{return useContext(SocketContext);}

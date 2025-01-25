@@ -1,18 +1,23 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useApp } from "../context/AppContext";
+import { useSocket } from "../context/SocketContext";
+import toast from "react-hot-toast";
 
-const HomePage = () => {
-  const [username, setName] = useState("");
-  const [roomId, setRoomId] = useState("");
+const HomeCompo = () => {
+  const {socket} = useSocket();
+  const {username,setUsername,roomId,setRoomId} = useApp();
   const [copied, setCopied] = useState(false);
   const navigate = useNavigate();
 
   const handleJoinRoom = () => {
     if (username && roomId) {
       // Redirect or render the video call component
-      navigate(`/video-call`, { state: { name: username, roomId } });
-    } else {
-      alert("Please enter both name and room ID");
+      navigate(`/room`);
+      console.log(socket.id);
+    } 
+    else {
+      toast.error("Please enter both name and room ID");
     }
   };
 
@@ -40,7 +45,7 @@ const HomePage = () => {
             placeholder="Enter your name"
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             value={username}
-            onChange={(e) => setName(e.target.value)}
+            onChange={(e) => setUsername(e.target.value)}
           />
           <input
             type="text"
@@ -76,4 +81,4 @@ const HomePage = () => {
   );
 };
 
-export default HomePage;
+export default HomeCompo;
