@@ -15,24 +15,22 @@ const VideoCall = () => {
   const {username,roomId,userID,setUserID,isChatVisible,remoteUsers,setRemoteUsers} = useApp();
   const {peerConnections, getPeerConnection, addTracksToConnection, remoteStreams,setRemoteStreams} = useRTC();  // RTC functions from RTCContext
   const [localStream, setLocalStream] = useState(null);
-  const [isMuted, setIsMuted] = useState(false);
+  const [isMicOn, setIsMicOn] = useState(false);
   const [isVideoOn, setIsVideoOn] = useState(true);
   const navigate = useNavigate();
   const localVideoRef = useRef(null);
   const screenSharingRef = useRef(null);
   const [isScreenSharing,setIsScreenSharing] = useState(false);
+  const [toggleRemoteState,setToggleRemoteState] = useState(false);
 
   useEffect(() => {
     // Request access to the user's media (video and audio)
     navigator.mediaDevices
       .getUserMedia({ video: true, audio: true })
       .then((stream) => {
-        if(localVideoRef.current){
-          localVideoRef.current.srcObject = stream;
-        }
+        const audioTrack = stream.getTracks().find(track=>track.kind === 'audio');
+        audioTrack.enabled = false;
         setLocalStream(stream);
-        console.log("stream",stream);
-        socket.emit("join-room", { roomId,username });
       })
       .catch((error) => {
         console.error("Error accessing media devices:", error);
@@ -41,24 +39,28 @@ const VideoCall = () => {
       });
   }, []);
 
+  useEffect(()=>{
+    if(localStream){
+      if(localVideoRef.current){
+        localVideoRef.current.srcObject = localStream;
+      }
+      socket.emit("join-room", { roomId,username });
+    }
+  },[localStream]);
+
   useEffect(() => {
     if (!socket ) return;
 
-
     // Listen for the "user-id" event and set the userId state with the received ID
     socket.on("user-id", ({id,users}) => {
-      console.log("user-id",id);
       setUserID(id);
       const filteredUsers = users.filter(user => user.userId !== id);
-      console.log("remoteUsers",filteredUsers);
       setRemoteUsers(filteredUsers);
     });
 
     // Listen for the "user-joined" event
     socket.on("user-joined", ({userId,users}) => {
-      console.log("userID -> ",userID);
       const filteredUsers = users.filter(user => user.userId !== userID);
-      console.log("filtered users",filteredUsers);
       setRemoteUsers(filteredUsers);
       if (localStream) {
         // When another user joins, add tracks to the peer connection for this user
@@ -102,6 +104,7 @@ const VideoCall = () => {
     
         return prevStreams; // No need to store audioState and videoState, we only modify the stream
       });
+      setToggleRemoteState(!toggleRemoteState);
     });
     
 
@@ -111,7 +114,6 @@ const VideoCall = () => {
       const pc = getPeerConnection(id);
       if (pc) {
         pc.close(); // Close the peer connection
-        console.log(`Peer connection closed for user: ${id}`);
       }
 
       // Remove the user's video/audio stream from the UI
@@ -146,22 +148,21 @@ const VideoCall = () => {
   const toggleMute = () => {
     if (localStream) {
       const audioTrack = localStream.getTracks().find(track=>track.kind === 'audio');
-      console.log(audioTrack.enabled);
       if(audioTrack.enabled){
         audioTrack.enabled = false;
-        setIsMuted(true);
+        setIsMicOn(false);
       }
       else{
         audioTrack.enabled = true;
-        setIsMuted(false);
+        setIsMicOn(true);
       }
-      socket.emit("toggle",{roomId,isMuted,isVideoOn});
+      socket.emit("toggle",{roomId,isMicOn,isVideoOn});
     }
   };
 
   // Toggle video on/off
   const toggleVideo = () => {
-    if (localStream) {
+    if(localStream){
       const videoTrack = localStream.getTracks().find(track=>track.kind === 'video');
       if(videoTrack.enabled){
         videoTrack.enabled = false;
@@ -171,9 +172,10 @@ const VideoCall = () => {
         videoTrack.enabled = true;
         setIsVideoOn(true);
       }
-      socket.emit("toggle",{roomId,isMuted,isVideoOn});
+      socket.emit("toggle",{roomId,isMicOn,isVideoOn});
     }
   };
+
 
   const toggleScreenSharing = () => {
     if (!isVideoOn) {
@@ -256,11 +258,9 @@ const VideoCall = () => {
 
   // Dynamically calculate grid style for any number of streams
   const calculateGridStyle = (count) => {
-    console.log(count);
     if (count === 0) return "grid-cols-1 grid-rows-1"; // No streams
     const columns = Math.ceil(Math.sqrt(count)); // Number of columns
     const rows = Math.ceil(count / columns); // Number of rows
-    console.log("columns ",columns,"rows ",rows);
     return `repeat(${columns},1fr)`;
   };
   const gridStyle = useMemo(() => {
@@ -277,12 +277,19 @@ const VideoCall = () => {
         {/* Local Video Stream */}
         <div className="relative rounded-lg border-4 w-auto overflow-hidden flex justify-center items-center border-blue-500 shadow-stream-glow">
           {localStream ? (
-            <video
-              ref={localVideoRef}
-              className="w-auto h-auto max-w-full max-h-full object-cover"
-              autoPlay
-              muted
-            />
+            <div className="w-auto h-auto relative max-w-full max-h-full">
+              <video
+                ref={localVideoRef}
+                className="w-auto h-auto max-w-full max-h-full object-cover"
+                autoPlay
+                muted
+              />
+              {!isVideoOn && (
+                <div className="absolute top-0 left-0 overflow-hidden max-w-full max-h-full w-auto h-auto object-cover bg-slate-500 blur-lg">
+                  <img width={100} height={100} src={`https://api.dicebear.com/5.x/initials/svg?seed=${username}`}/>
+                </div>
+              )}
+            </div>
           ) : (
             <div className="w-auto h-auto min-w-full">
               Loading local stream...
@@ -302,7 +309,7 @@ const VideoCall = () => {
               const remoteUsername = remoteUsers.find(user => user.userId === userId)?.username || "Unknown User";
               return (
                 <div key={userId} className="relative w-auto overflow-hidden flex items-center justify-center rounded-lg border-4 order-white shadow-stream-glow">
-                  {videoTrack && videoTrack.enabled ? (
+                  {videoTrack && (
                     <video
                       ref={(video) => {
                         if (video && stream && video.srcObject !== stream) video.srcObject = stream;
@@ -310,10 +317,10 @@ const VideoCall = () => {
                       className="max-w-full max-h-full h-auto w-auto object-cover"
                       autoPlay
                     />
-                  ):
-                  (
-                    <div className="overflow-hidden max-w-full max-h-full w-auto h-auto object-cover bg-slate-500 blur-lg">
-                      <image src={`https://api.dicebar.com/5.x/initials/svg?seed=${remoteUsername}`}/>
+                  )}
+                  {!videoTrack.enabled && (
+                    <div className=" absolute top-0 left-0 overflow-hidden max-w-full max-h-full w-auto h-auto object-cover bg-slate-500 blur-lg">
+                      <img src={`https://api.dicebear.com/5.x/initials/svg?seed=${remoteUsername}`}/>
                     </div>
                   )}
                     {audioTrack && !audioTrack.enabled && (
@@ -338,7 +345,7 @@ const VideoCall = () => {
           onClick={toggleMute}
           className="bg-red-500 hover:bg-red-600 text-white py-3 px-6 rounded-lg shadow-md text-lg font-semibold flex items-center justify-center"
         >
-          {isMuted ? <FaMicrophoneSlash size={24} /> : <FaMicrophone size={24} />}
+          {isMicOn ? <FaMicrophone size={24} /> : <FaMicrophoneSlash size={24} />}
         </button>
 
         <button

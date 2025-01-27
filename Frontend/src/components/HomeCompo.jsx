@@ -28,7 +28,7 @@ const HomeCompo = () => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } else {
-      alert("Please enter a Room ID first");
+      toast.error("Please enter a Room ID first");
     }
   };
 

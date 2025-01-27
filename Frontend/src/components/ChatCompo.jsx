@@ -12,24 +12,6 @@ const ChatCompo = () => {
 
     const [chat,setChat] = useState([]);
     const [msg,setMsg] = useState('');
-    const [typingUsers, setTypingUsers] = useState([]); 
-    const [currentTypingUser, setCurrentTypingUser] = useState(null);
-
-    // Cycle through typing users
-    useEffect(() => {
-      if (typingUsers.length === 0) {
-          setCurrentTypingUser(null);
-          return;
-      }
-
-      let index = 0;
-      const interval = setInterval(() => {
-          setCurrentTypingUser(typingUsers[index]);
-          index = (index + 1) % typingUsers.length;
-      }, 2000);
-
-      return () => clearInterval(interval);
-    }, [typingUsers]);
 
     useEffect(() => {
         if (!socket) return;
@@ -41,32 +23,12 @@ const ChatCompo = () => {
 
         // Handle message receive 
         socket.on('newMessage', (chatMessage) => {
-            console.log('newMessage->',chatMessage);
             setChat((prev) => [...prev, chatMessage]);
-        });
-
-        // Handle typing event
-        socket.on("typing", ({ username: typingUser }) => {
-          // Exclude the current user from the list
-          if (typingUser !== username) {
-              setTypingUsers((prev) => {
-                  if (!prev.includes(typingUser)) {
-                      return [...prev, typingUser];
-                  }
-                  return prev;
-              });
-  
-              // Remove user after 5 seconds of inactivity
-              setTimeout(() => {
-                  setTypingUsers((prev) => prev.filter((user) => user !== typingUser));
-              }, 2000);
-          }
         });
 
         return () => {
             socket.off("chat-history");
             socket.off("newMessage");
-            socket.off("typing");
         };
     }, [socket, roomId]);
 
@@ -89,14 +51,7 @@ const ChatCompo = () => {
         <div className="flex flex-col w-full h-full p-4">
           {/* Header */}
           <div className="flex items-center justify-between text-white p-4">
-            <div className="flex flex-col items-start justify-start">
-              <h2 className="text-lg font-bold">Chat</h2>
-              {currentTypingUser && (
-                  <div className="text-gray-400 text-sm italic mt-2">
-                      {currentTypingUser} is typing...
-                  </div>
-              )}              
-            </div>
+            <h2 className="text-lg font-bold">Chat</h2>
             <button
               onClick={()=>setIsChatVisible(!isChatVisible)}
               className="text-lg font-bold hover:text-gray-200"
@@ -138,7 +93,6 @@ const ChatCompo = () => {
               value={msg}
               onChange={(e) => {
                 setMsg(e.target.value);
-                socket.emit('typing', { roomId, username });
               }}
               placeholder="Type a message..."
               className="flex-1 bg-gray-600 text-gray-300 overflow-y-auto p-2 rounded-2xl"

@@ -9,7 +9,6 @@ export default function RTCProvider ({ children }){
   const [remoteStreams, setRemoteStreams] = useState({});
 
   const createPeerConnection = (userId) => {
-    console.log(`Creating PeerConnection for userId: ${userId}`);
     const pc = new RTCPeerConnection();
 
     pc.onnegotiationneeded = async () => {
@@ -33,7 +32,6 @@ export default function RTCProvider ({ children }){
     };
 
     pc.ontrack = (event) => {
-      console.log(`Track received from userId: ${userId}`);
       setRemoteStreams((prevStreams) => ({
         ...prevStreams,
         [userId]: event.streams[0],
@@ -46,7 +44,6 @@ export default function RTCProvider ({ children }){
 
   const getPeerConnection = (userId) => {
     if (!peerConnections.current[userId]) {
-      console.log(`Creating new PeerConnection for userId: ${userId}`);
       peerConnections.current[userId] = createPeerConnection(userId);
     }
     return peerConnections.current[userId];
@@ -54,7 +51,6 @@ export default function RTCProvider ({ children }){
 
   const addTracksToConnection = (userId, localStream) => {
     const pc = getPeerConnection(userId);
-    console.log(`adding tracks to pc -> ${pc} and user id -> ${userId}`);
   
     // Check if tracks are already added
     const senders = pc.getSenders();

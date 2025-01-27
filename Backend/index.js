@@ -99,8 +99,8 @@ io.on('connection',(socket)=>{
       });     
 
       //toogle media
-      socket.on("toggle",({roomId,isMuted,isVideoOn})=>{
-        io.to(roomId).emit("toggle",{audioState:isMuted,videoState:isVideoOn});
+      socket.on("toggle",({roomId,isMicOn,isVideoOn})=>{
+        socket.to(roomId).emit("toggle",{audioState:isMicOn,videoState:isVideoOn,remoteId:socket.id});
       })
 
       // Handle incoming messages
@@ -109,12 +109,6 @@ io.on('connection',(socket)=>{
         roomChats[roomId].push(chatMessage); // Store message in the room's chat history
         console.log(`Sending message`,chatMessage);
         io.to(roomId).emit('newMessage', chatMessage); // Broadcast the message to the room
-      });
-
-      // Handle "typing" event
-      socket.on("typing", ({ roomId, username }) => {
-        // Broadcast to everyone in the room except the sender
-        socket.to(roomId).emit("typing", { username });
       });
     
       // Handle disconnection
