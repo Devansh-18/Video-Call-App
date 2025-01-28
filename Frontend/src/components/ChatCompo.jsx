@@ -61,7 +61,7 @@ const ChatCompo = () => {
           </div>
   
           {/* Chat Messages */}
-          <div className={`flex-1 overflow-y-auto shadow-md bg-slate-700 p-4 space-y-2`}
+          <div className={`flex-1 overflow-y-auto shadow-md bg-slate-700 p-4 space-y-2 no-arrows scrollbar-thin scrollbar-thumb-slate-500 scrollbar-track-slate-900`}
           style={{ maxHeight: "80vh" }}
           ref={chatEndRef}>
             {chat.map((message, index) => (

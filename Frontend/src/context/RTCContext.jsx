@@ -34,7 +34,11 @@ export default function RTCProvider ({ children }){
     pc.ontrack = (event) => {
       setRemoteStreams((prevStreams) => ({
         ...prevStreams,
-        [userId]: event.streams[0],
+        [userId]: {
+          stream : event.streams[0],
+          audioState: event.streams[0].getAudioTracks()[0]?.enabled || false,
+          videoState: event.streams[0].getVideoTracks()[0]?.enabled || false,
+        }
       }));
     };
 

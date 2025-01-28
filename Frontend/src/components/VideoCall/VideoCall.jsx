@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import {toast} from "react-hot-toast";
 import { MdOutlineScreenShare, MdOutlineStopScreenShare } from "react-icons/md";
-import { FaMicrophone, FaMicrophoneSlash, FaPhone, FaPhoneSlash, FaVideo, FaVideoSlash } from "react-icons/fa";
+import { FaMicrophone, FaMicrophoneSlash, FaVideo, FaVideoSlash } from "react-icons/fa";
 import { MdCallEnd } from "react-icons/md";
 import { useSocket } from "../../context/SocketContext";
 import { useRTC } from "../../context/RTCContext";
@@ -21,15 +21,17 @@ const VideoCall = () => {
   const localVideoRef = useRef(null);
   const screenSharingRef = useRef(null);
   const [isScreenSharing,setIsScreenSharing] = useState(false);
-  const [toggleRemoteState,setToggleRemoteState] = useState(false);
 
   useEffect(() => {
     // Request access to the user's media (video and audio)
     navigator.mediaDevices
       .getUserMedia({ video: true, audio: true })
       .then((stream) => {
+        console.log(stream);
         const audioTrack = stream.getTracks().find(track=>track.kind === 'audio');
-        audioTrack.enabled = false;
+        if(audioTrack){
+          audioTrack.enabled = false;
+        }
         setLocalStream(stream);
       })
       .catch((error) => {
@@ -60,6 +62,7 @@ const VideoCall = () => {
 
     // Listen for the "user-joined" event
     socket.on("user-joined", ({userId,users}) => {
+      console.log("userid",userID);
       const filteredUsers = users.filter(user => user.userId !== userID);
       setRemoteUsers(filteredUsers);
       if (localStream) {
@@ -92,19 +95,30 @@ const VideoCall = () => {
     //toggling media
     socket.on("toggle", ({ audioState, videoState, remoteId }) => {
       setRemoteStreams((prevStreams) => {
-        const updatedStream = prevStreams[remoteId]?.stream;
-    
-        if (updatedStream) {
-          const remoteAudioTrack = updatedStream.getAudioTracks()[0];
-          const remoteVideoTrack = updatedStream.getVideoTracks()[0];
+        const remoteStreamData = prevStreams[remoteId];
+        if (remoteStreamData) {
+          const stream = remoteStreamData?.stream;
+          const remoteAudioTrack = stream.getAudioTracks()[0];
+          const remoteVideoTrack = stream.getVideoTracks()[0];
+          console.log(remoteVideoTrack.enabled);
+          console.log(remoteAudioTrack.enabled);
+          console.log(videoState);
     
           if (remoteAudioTrack) remoteAudioTrack.enabled = audioState;
           if (remoteVideoTrack) remoteVideoTrack.enabled = videoState;
+
+          return {
+            ...prevStreams,
+            [remoteId]: {
+              ...remoteStreamData,
+              audioState: remoteAudioTrack?.enabled,
+              videoState: remoteVideoTrack?.enabled,
+            },
+          };
         }
     
         return prevStreams; // No need to store audioState and videoState, we only modify the stream
       });
-      setToggleRemoteState(!toggleRemoteState);
     });
     
 
@@ -156,7 +170,7 @@ const VideoCall = () => {
         audioTrack.enabled = true;
         setIsMicOn(true);
       }
-      socket.emit("toggle",{roomId,isMicOn,isVideoOn});
+      socket.emit("toggle",{roomId,isMicOn:audioTrack.enabled,isVideoOn});
     }
   };
 
@@ -172,7 +186,7 @@ const VideoCall = () => {
         videoTrack.enabled = true;
         setIsVideoOn(true);
       }
-      socket.emit("toggle",{roomId,isMicOn,isVideoOn});
+      socket.emit("toggle",{roomId,isMicOn,isVideoOn:videoTrack.enabled});
     }
   };
 
@@ -244,6 +258,11 @@ const VideoCall = () => {
         .catch((error) => {
           console.error("Error in starting screen sharing: ", error);
           toast.error("Failed to start screen sharing");
+          if(screenSharingRef.current){
+            screenSharingRef.current.stop();
+            screenSharingRef.current.onended();
+            setIsScreenSharing(false);
+          }
         });
     } else {
       // Stop screen sharing
@@ -273,7 +292,6 @@ const VideoCall = () => {
     <div className="relative flex p-4 items-center justify-center overflow-hidden w-screen h-screen bg-gradient-to-br from-gray-900 to-gray-700 text-white">
       <div className={`relative gap-4 ${isChatVisible?"md:w-2/3":"w-full"} h-[90%] items-center justify-center`}
       style={{ display: 'grid', gridTemplateColumns: `${gridStyle}` }}>
-      {console.log(gridStyle)}
         {/* Local Video Stream */}
         <div className="relative rounded-lg border-4 w-auto overflow-hidden flex justify-center items-center border-blue-500 shadow-stream-glow">
           {localStream ? (
@@ -302,10 +320,11 @@ const VideoCall = () => {
 
         {/* Remote Video Streams */}
           {Object.entries(remoteStreams).length > 0 && (
-            Object.entries(remoteStreams).map(([userId, stream]) => {
+            Object.entries(remoteStreams).map(([userId, { stream, audioState, videoState }]) => {
               // Get the audio and video tracks of the stream
-              const audioTrack = stream.getAudioTracks()[0];
+              // const audioTrack = stream.getAudioTracks()[0];
               const videoTrack = stream.getVideoTracks()[0];
+              console.log(videoTrack.enabled);
               const remoteUsername = remoteUsers.find(user => user.userId === userId)?.username || "Unknown User";
               return (
                 <div key={userId} className="relative w-auto overflow-hidden flex items-center justify-center rounded-lg border-4 order-white shadow-stream-glow">
@@ -318,16 +337,16 @@ const VideoCall = () => {
                       autoPlay
                     />
                   )}
-                  {!videoTrack.enabled && (
+                  {!videoState && (
                     <div className=" absolute top-0 left-0 overflow-hidden max-w-full max-h-full w-auto h-auto object-cover bg-slate-500 blur-lg">
                       <img src={`https://api.dicebear.com/5.x/initials/svg?seed=${remoteUsername}`}/>
                     </div>
                   )}
-                    {audioTrack && !audioTrack.enabled && (
-                      <div className="absolute top-[50%] left-0 bg-slate-300 blur-md bg-blend-screen p-2 text-white rounded-full">
-                        {remoteUsername} is muted
-                      </div>
-                    )}
+                  {!audioState && (
+                    <div className="absolute top-[50%] left-0 bg-slate-300 blur-md bg-blend-screen p-2 text-white rounded-full">
+                      {remoteUsername} is muted
+                    </div>
+                  )}
                   
                   <div className="absolute top-2 left-2 z-50 bg-black bg-opacity-50 text-white px-2 py-1 rounded">
                     {remoteUsername}

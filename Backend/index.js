@@ -100,6 +100,7 @@ io.on('connection',(socket)=>{
 
       //toogle media
       socket.on("toggle",({roomId,isMicOn,isVideoOn})=>{
+        console.log(isVideoOn);
         socket.to(roomId).emit("toggle",{audioState:isMicOn,videoState:isVideoOn,remoteId:socket.id});
       })
 
