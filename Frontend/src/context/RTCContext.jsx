@@ -1,10 +1,12 @@
 import React, { createContext, useRef, useState } from "react";
 import { useSocket } from "./SocketContext";
+import { useApp } from "./AppContext";
 
 const RTCContext = createContext();
 
 export default function RTCProvider ({ children }){
   const {socket} = useSocket();
+  const {isMicOn} = useApp();
   const peerConnections = useRef({});
   const [remoteStreams, setRemoteStreams] = useState({});
 
@@ -32,11 +34,13 @@ export default function RTCProvider ({ children }){
     };
 
     pc.ontrack = (event) => {
+      {console.log(event)}
+      {console.log(event.streams[0].getTracks().find(track=>track.kind === 'audio').enabled)}
       setRemoteStreams((prevStreams) => ({
         ...prevStreams,
         [userId]: {
           stream : event.streams[0],
-          audioState: event.streams[0].getAudioTracks()[0]?.enabled || false,
+          audioState: isMicOn,
           videoState: event.streams[0].getVideoTracks()[0]?.enabled || false,
         }
       }));
@@ -62,6 +66,7 @@ export default function RTCProvider ({ children }){
   
     localStream && localStream.getTracks().forEach((track) => {
       if (!trackIds.includes(track.id)) {
+        console.log(localStream.getTracks().find(track=>track.kind === 'audio').enabled);
         pc.addTrack(track, localStream);
       }
     });

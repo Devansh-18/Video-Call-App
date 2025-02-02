@@ -12,12 +12,12 @@ createRoot(document.getElementById('root')).render(
   <StrictMode>
     <BrowserRouter>
       <SocketContextProvider>
-        <RTCProvider>
-          <AppContextProvider>
+        <AppContextProvider>
+          <RTCProvider>
               <App />
               <Toaster/>
-          </AppContextProvider>
-        </RTCProvider>
+          </RTCProvider>
+        </AppContextProvider>
       </SocketContextProvider>
     </BrowserRouter>
   </StrictMode>,

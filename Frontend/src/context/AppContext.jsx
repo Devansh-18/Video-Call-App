@@ -7,13 +7,14 @@ export default function AppContextProvider({children}){
 
     const [loading,setLoading] = useState(false);
     const [remoteUsers, setRemoteUsers] = useState([]);
+    const [isMicOn, setIsMicOn] = useState(false);
     const [username,setUsername] = useState('');
     const [roomId,setRoomId] = useState('');
     const [userID,setUserID] = useState(null);
     const [isChatVisible,setIsChatVisible] = useState(false);
 
     const value = {
-        loading,setLoading,remoteUsers,setRemoteUsers,username,roomId,setUsername,setRoomId,userID,setUserID,isChatVisible,setIsChatVisible,
+        loading,isMicOn,setIsMicOn,setLoading,remoteUsers,setRemoteUsers,username,roomId,setUsername,setRoomId,userID,setUserID,isChatVisible,setIsChatVisible,
     };
 
     return <AppContext.Provider value={value}>

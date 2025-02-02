@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import {toast} from "react-hot-toast";
-import { MdOutlineScreenShare, MdOutlineStopScreenShare } from "react-icons/md";
+import { MdGroups2, MdOutlineScreenShare, MdOutlineStopScreenShare } from "react-icons/md";
 import { FaMicrophone, FaMicrophoneSlash, FaVideo, FaVideoSlash } from "react-icons/fa";
 import { MdCallEnd } from "react-icons/md";
 import { useSocket } from "../../context/SocketContext";
@@ -9,18 +9,19 @@ import { useNavigate } from "react-router-dom";
 import { useMemo } from "react";
 import { useApp } from "../../context/AppContext";
 import ChatCompo from "../ChatCompo";
+import { RxCross1 } from "react-icons/rx";
 
 const VideoCall = () => {
   const {socket} = useSocket();
-  const {username,roomId,userID,setUserID,isChatVisible,remoteUsers,setRemoteUsers} = useApp();
+  const {username,isMicOn, setIsMicOn,roomId,userID,setUserID,isChatVisible,remoteUsers,setRemoteUsers} = useApp();
   const {peerConnections, getPeerConnection, addTracksToConnection, remoteStreams,setRemoteStreams} = useRTC();  // RTC functions from RTCContext
   const [localStream, setLocalStream] = useState(null);
-  const [isMicOn, setIsMicOn] = useState(false);
   const [isVideoOn, setIsVideoOn] = useState(true);
   const navigate = useNavigate();
   const localVideoRef = useRef(null);
   const screenSharingRef = useRef(null);
   const [isScreenSharing,setIsScreenSharing] = useState(false);
+  const [isUserListVisible,setIsUserListVisible] = useState(false);
 
   useEffect(() => {
     // Request access to the user's media (video and audio)
@@ -28,10 +29,10 @@ const VideoCall = () => {
       .getUserMedia({ video: true, audio: true })
       .then((stream) => {
         console.log(stream);
-        const audioTrack = stream.getTracks().find(track=>track.kind === 'audio');
-        if(audioTrack){
-          audioTrack.enabled = false;
-        }
+        // const audioTrack = stream.getTracks().find(track=>track.kind === 'audio');
+        // if(audioTrack){
+        //   audioTrack.enabled = false;
+        // }
         setLocalStream(stream);
       })
       .catch((error) => {
@@ -45,6 +46,10 @@ const VideoCall = () => {
     if(localStream){
       if(localVideoRef.current){
         localVideoRef.current.srcObject = localStream;
+      }
+      const audioTrack = localStream.getTracks().find(track=>track.kind === 'audio');
+      if(audioTrack){
+        audioTrack.enabled = isMicOn;
       }
       socket.emit("join-room", { roomId,username });
     }
@@ -100,9 +105,6 @@ const VideoCall = () => {
           const stream = remoteStreamData?.stream;
           const remoteAudioTrack = stream.getAudioTracks()[0];
           const remoteVideoTrack = stream.getVideoTracks()[0];
-          console.log(remoteVideoTrack.enabled);
-          console.log(remoteAudioTrack.enabled);
-          console.log(videoState);
     
           if (remoteAudioTrack) remoteAudioTrack.enabled = audioState;
           if (remoteVideoTrack) remoteVideoTrack.enabled = videoState;
@@ -157,6 +159,11 @@ const VideoCall = () => {
     navigate("/");
     window.location.reload();
   };
+
+  //Toggle users list
+  const toggleUserList = ()=>{
+    setIsUserListVisible(!isUserListVisible);
+  }
 
   // Toggle mute/unmute
   const toggleMute = () => {
@@ -274,84 +281,71 @@ const VideoCall = () => {
       }
     }
   };
-
-  // Dynamically calculate grid style for any number of streams
-  const calculateGridStyle = (count) => {
-    if (count === 0) return "grid-cols-1 grid-rows-1"; // No streams
-    const columns = Math.ceil(Math.sqrt(count)); // Number of columns
-    const rows = Math.ceil(count / columns); // Number of rows
-    return `repeat(${columns},1fr)`;
-  };
-  const gridStyle = useMemo(() => {
-    const count = remoteUsers.length + 1; // Add 1 for local stream
-    return calculateGridStyle(count);
-  }, [remoteUsers.length]);
-
   
   return (
-    <div className="relative flex p-4 items-center justify-center overflow-hidden w-screen h-screen bg-gradient-to-br from-gray-900 to-gray-700 text-white">
-      <div className={`relative gap-4 ${isChatVisible?"md:w-2/3":"w-full"} h-[90%] items-center justify-center`}
-      style={{ display: 'grid', gridTemplateColumns: `${gridStyle}` }}>
+    <div className="relative flex flex-col gap-3 p-4 justify-center overflow-y-auto overflow-x-hidden w-screen h-screen bg-gradient-to-br from-gray-900 to-gray-700 text-white"> 
+      <div className={`relative overflow-hidden gap-0 md:row-gap-4 col-gap-4 ml-0 ${isChatVisible ? "md:w-2/3" : "w-[100%]"} h-[80%] sm:h-auto items-center justify-center`}style={{display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", placeItems:"center"}}>
         {/* Local Video Stream */}
-        <div className="relative rounded-lg border-4 w-auto overflow-hidden flex justify-center items-center border-blue-500 shadow-stream-glow">
           {localStream ? (
-            <div className="w-auto h-auto relative max-w-full max-h-full">
+            <div className="relative md:rounded-lg md:border-4 max-w-[90%] max-h-[90%] w-fit overflow-hidden flex justify-center items-center md:border-blue-500 aspect-[4/3]" >
               <video
                 ref={localVideoRef}
-                className="w-auto h-auto max-w-full max-h-full object-cover"
+                className="object-cover"
                 autoPlay
                 muted
               />
               {!isVideoOn && (
-                <div className="absolute top-0 left-0 overflow-hidden max-w-full max-h-full w-auto h-auto object-cover bg-slate-500 blur-lg">
-                  <img width={100} height={100} src={`https://api.dicebear.com/5.x/initials/svg?seed=${username}`}/>
-                </div>
+                  <img className="absolute -top-16 left-0 overflow-hidden object-none w-fit h-fit" src={`https://api.dicebear.com/5.x/initials/svg?seed=${username}`}/>
               )}
+              {!isMicOn && (
+                  <div className="absolute bottom-5 font-normal text-white bg-black bg-opacity-50 py-1 px-2 md:px-4 rounded-lg md:ml-2 text-sm md:text-base mx-auto" style={{"textShadow":"0px 0px 6px #00ccff"}}>
+                    You are muted
+                  </div>
+              )}
+              <div className="absolute top-2 text-sm md:text-base left-2 z-10 bg-black bg-opacity-50 text-white px-2 py-1 rounded">
+                {`${username} (Me)`}
+              </div>
             </div>
           ) : (
-            <div className="w-auto h-auto min-w-full">
-              Loading local stream...
+            <div className="w-auto flex flex-col justify-center items-center mx-auto py-4 h-auto relative max-w-full max-h-full">
+             <div role="status">
+              <svg aria-hidden="true" className="inline w-12 h-12 text-gray-200 animate-spin dark:text-gray-600 fill-yellow-400" viewBox="0 0 100 101" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z" fill="currentColor"/>
+                  <path d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0491C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z" fill="currentFill"/>
+              </svg>
+              <span className="sr-only">Loading...</span>
+             </div>
+             <div className="px-3 my-6 py-4 text-2xl font-medium leading-none text-center text-yellow-400 rounded-full animate-pulse">Loading Local Stream...</div>
             </div>
           )}
-          <div className="absolute top-2 left-2 z-50 bg-black bg-opacity-50 text-white px-2 py-1 rounded">
-            {username} Me
-          </div>
-        </div>
 
         {/* Remote Video Streams */}
           {Object.entries(remoteStreams).length > 0 && (
             Object.entries(remoteStreams).map(([userId, { stream, audioState, videoState }]) => {
-              // Get the audio and video tracks of the stream
-              // const audioTrack = stream.getAudioTracks()[0];
               const videoTrack = stream.getVideoTracks()[0];
-              console.log(videoTrack.enabled);
               const remoteUsername = remoteUsers.find(user => user.userId === userId)?.username || "Unknown User";
               return (
-                <div key={userId} className="relative w-auto overflow-hidden flex items-center justify-center rounded-lg border-4 order-white shadow-stream-glow">
+                <div key={userId} className="relative w-fit h-auto max-h-[90%] max-w-[90%] overflow-hidden flex items-center justify-center md:rounded-lg md:border-4 aspect-[4/3]">
                   {videoTrack && (
                     <video
                       ref={(video) => {
                         if (video && stream && video.srcObject !== stream) video.srcObject = stream;
                       }}
-                      className="max-w-full max-h-full h-auto w-auto object-cover"
+                      className="object-cover"
                       autoPlay
                     />
                   )}
                   {!videoState && (
-                    <div className=" absolute top-0 left-0 overflow-hidden max-w-full max-h-full w-auto h-auto object-cover bg-slate-500 blur-lg">
-                      <img src={`https://api.dicebear.com/5.x/initials/svg?seed=${remoteUsername}`}/>
-                    </div>
+                      <img className="absolute -top-16 left-0 overflow-hidden object-none w-fit h-fit " src={`https://api.dicebear.com/5.x/initials/svg?seed=${remoteUsername}`}/>
                   )}
                   {!audioState && (
-                    <div className="absolute top-[50%] left-0 bg-slate-300 blur-md bg-blend-screen p-2 text-white rounded-full">
+                    <div className="absolute bottom-5 left-50 font-normal text-white bg-black bg-opacity-25 py-1 px-2 md:px-4 rounded-full text-sm md:text-base" style={{"textShadow":"0px 0px 6px #00ccff"}}>
                       {remoteUsername} is muted
                     </div>
                   )}
-                  
-                  <div className="absolute top-2 left-2 z-50 bg-black bg-opacity-50 text-white px-2 py-1 rounded">
+                  <div className="absolute text-sm md:text-base top-2 left-2 z-10 bg-black bg-opacity-50 text-white px-2 py-1 rounded">
                     {remoteUsername}
                   </div>
-
                 </div>
               )
             })
@@ -359,49 +353,76 @@ const VideoCall = () => {
       </div>
 
       {/* Controls: Mute/Unmute, Video On/Off */}
-      <div className={`absolute left-0 bottom-8 ${isChatVisible?"w-2/3":"w-full"} flex item-center justify-center space-x-4`}>
+      <div className={`fixed bottom-4 max-w-full z-50 ${isChatVisible ? "md:w-2/3" : "w-full"} md:static flex flex-wrap item-center justify-center space-x-1 md:space-x-4`}>
         <button
           onClick={toggleMute}
-          className="bg-red-500 hover:bg-red-600 text-white py-3 px-6 rounded-lg shadow-md text-lg font-semibold flex items-center justify-center"
+          className="bg-red-500 hover:bg-red-600 text-white py-2 px-3 md:py-3 md:px-6 rounded-lg shadow-md text-sm md:text-lg font-semibold flex items-center justify-center"
         >
-          {isMicOn ? <FaMicrophone size={24} /> : <FaMicrophoneSlash size={24} />}
+          {isMicOn ? <FaMicrophone className="text-sm md:text-2xl" /> : <FaMicrophoneSlash className="text-lg md:text-2xl" />}
         </button>
 
         <button
           onClick={toggleVideo}
-          className="bg-blue-500 hover:bg-blue-600 text-white py-3 px-6 rounded-lg shadow-md text-lg font-semibold flex items-center justify-center"
+          className="bg-blue-500 hover:bg-blue-600 text-white py-2 px-3 md:py-3 md:px-6 rounded-lg shadow-md text-sm md:text-lg font-semibold flex items-center justify-center"
         >
-          {isVideoOn ? <FaVideo size={24} /> : <FaVideoSlash size={24} />}
+          {isVideoOn ? <FaVideo className="text-sm md:text-2xl" /> : <FaVideoSlash className="text-lg md:text-2xl" />}
         </button>
         <button
           onClick={toggleScreenSharing}
-          className="bg-blue-500 hover:bg-blue-600 text-white py-3 px-6 rounded-lg shadow-md text-lg font-semibold flex items-center justify-center"
+          className="bg-blue-500 hover:bg-blue-600 text-white py-2 px-3 md:py-3 md:px-6 rounded-lg shadow-md text-sm md:text-lg font-semibold flex items-center justify-center"
         >
-          {isScreenSharing ? <MdOutlineScreenShare size={24} /> : <MdOutlineStopScreenShare size={24} />}
+          {isScreenSharing ? <MdOutlineScreenShare className="text-sm md:text-2xl" /> : <MdOutlineStopScreenShare className="text-lg md:text-2xl" />}
+        </button>
+        <button
+          onClick={toggleUserList}
+          className="relative bg-blue-500 hover:bg-blue-600 text-white py-2 px-3 md:py-3 md:px-6 rounded-lg shadow-md text-sm md:text-lg font-semibold flex items-center justify-center"
+        >
+          <MdGroups2 className="text-lg md:text-2xl" />
+          <p className="absolute bottom-[24px] md:bottom-[35px] right-[-5px] rounded-full bg-red-500 text-white text-s font-semibold px-2">
+            {remoteUsers.length}
+          </p>
         </button>
         
         <button
-          onClick={disconnectCall} // Call the disconnect function
-          className="bg-red-600 hover:bg-red-700 text-white py-3 px-6 rounded-lg shadow-md text-lg font-semibold flex items-center justify-center gap-2"
+          onClick={disconnectCall} 
+          className="bg-red-600 hover:bg-red-700 text-white py-2 px-3 md:py-3 md:px-6 rounded-lg shadow-md text-sm md:text-lg font-semibold flex items-center justify-center gap-2"
         >
-          <MdCallEnd size={24} /> {/* Icon added here */}
+          <MdCallEnd className="text-sm md:text-2xl" />
         </button>
       </div>
 
       {/* Chat UI */}
       <ChatCompo/>
 
-      <div className="absolute bg-slate-900 top-0 left-0 text-white flex flex-col items-start justify-start">
-        <h1>Remote Users</h1>
-        <ul className="flex flex-col items-start justify-start">
-          {remoteUsers.map(({userId, username}) => (
-            <li className="p-2" key={userId}>
-              {userId}: {username}
-            </li>
-          ))}
-        </ul>
-      </div>
+      {
+        isUserListVisible && (
+            <div className={`fixed left-0 top-0 h-screen w-screen z-30 bg-black inset-0 bg-opacity-10 backdrop-blur-lg flex flex-col items-center justify-center transition-transform transform duration-500 ease-in-out ${isUserListVisible ? "translate-x-0" : "translate-x-full"
+            }`}>
+              <div className="h-fit left-[50%] top[50%] w-72 bg-gray-900 p-4 text-white flex flex-col items-start justify-start">
+                <h1 className="text-xl font-semibold">Remote Users</h1>
+                <button onClick={toggleUserList} className="absolute z-50 top-5 right-5 text-white rounded-lg p-2 font-bold">
+                  <RxCross1 size={24}/>
+                </button>
+              <div className="my-1">
+                <ul className="flex flex-wrap gap-2 items-start justify-start">
+                  {remoteUsers.length === 0 ? (
+                    <li className="text-gray-300">No users in the room</li>
+                   ) : (
+                    remoteUsers.map((user) => (
+                      <li key={user.userId} className="px-2 py-1 hover:bg-slate-700 my-2 border w-full border-yellow-600 rounded-lg">{
+                        user.username ? user.username : "Unknown User"
+                      }</li>
+                    ))
+                  )}
+                </ul>
+              </div>
+              </div>
+            </div>
+          )
+      }
     </div>
+
+
   );
 };
 

@@ -1,5 +1,6 @@
 import { RxCross2 } from "react-icons/rx";
 import { IoSendSharp } from "react-icons/io5";
+import { IoIosChatbubbles } from "react-icons/io";
 import React, { useRef, useState, useEffect } from 'react'
 import { useApp } from '../context/AppContext';
 import { useSocket } from '../context/SocketContext';
@@ -47,7 +48,7 @@ const ChatCompo = () => {
   };
   return (
     isChatVisible ? (
-      <div className={`bg-slate-900 shadow-lg w-1/3 h-screen`}>
+      <div className={`absolute top-0 right-0 bg-slate-900 shadow-lg w-full z-50 md:w-1/3 h-screen`}>
         <div className="flex flex-col w-full h-full p-4">
           {/* Header */}
           <div className="flex items-center justify-between text-white p-4">
@@ -70,13 +71,13 @@ const ChatCompo = () => {
                 className={`text-gray-100 font-light flex flex-col p-2 rounded-lg shadow-sm max-w-xs ${message.userId===userID?"ml-auto bg-green-900":"mr-auto bg-gray-800"}`}
                 style={{ wordWrap: "break-word" }}
               >
-                <div className="text-xs font-thin text-white">
+                <div className="text-xs font-thin text-gray-500">
                   {message.userId===userID?
                   username
                   :
                   remoteUsers.find(user => user.userId === message.userId)?.username || "Unknown User"}
                 </div>
-                <div className="text-sm">
+                <div className="text-md">
                   {message.message}
                 </div>
                 <div className="text-xs font-thin text-right">
@@ -95,7 +96,7 @@ const ChatCompo = () => {
                 setMsg(e.target.value);
               }}
               placeholder="Type a message..."
-              className="flex-1 bg-gray-600 text-gray-300 overflow-y-auto p-2 rounded-2xl"
+              className="flex-1 outline-none shadow-sm shadow-white bg-gray-600 text-gray-300 overflow-y-auto p-2 rounded-2xl"
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
                   sendMessage();
@@ -113,8 +114,8 @@ const ChatCompo = () => {
       </div>
     ):(
       <button onClick={() => setIsChatVisible(!isChatVisible)}
-          className="absolute top-4 right-4 bg-blue-500 text-white px-4 py-2 rounded-lg shadow-md hover:bg-blue-600">
-          Show Chat
+          className="absolute text-lg font-semibold flex items-center justify-center top-2 md:top-4 right-4 bg-blue-500 text-white px-4 py-2 rounded-lg shadow-md hover:bg-blue-600">
+          <IoIosChatbubbles />
       </button>
     )
   )
