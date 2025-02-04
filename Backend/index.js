@@ -142,4 +142,4 @@ io.on('connection',(socket)=>{
 app.listen(PORT,()=>{
     console.log(`App is listening at ${PORT}`);
 });
-io.listen(PORT);
+// io.listen(PORT);
