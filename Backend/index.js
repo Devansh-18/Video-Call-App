@@ -6,11 +6,11 @@ const cors = require("cors");
 const bodyParser = require("body-parser");
 require("dotenv").config();
 const PORT = process.env.PORT;
-const IOPORT = process.env.IOPORT;
+// const IOPORT = process.env.IOPORT;
 
 const io = new Server({
   cors: {
-    origin: "*",
+    origin: "http://localhost:5173/",
     methods: ["GET", "POST"]
   }
 });
@@ -142,4 +142,4 @@ io.on('connection',(socket)=>{
 app.listen(PORT,()=>{
     console.log(`App is listening at ${PORT}`);
 });
-io.listen(IOPORT);
+io.listen(PORT);
