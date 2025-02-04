@@ -9,7 +9,10 @@ const PORT = process.env.PORT;
 const IOPORT = process.env.IOPORT;
 
 const io = new Server({
-    cors:true,
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST"]
+  }
 });
 app.use(bodyParser.json());
 app.use(express.json());

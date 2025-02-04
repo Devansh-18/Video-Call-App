@@ -8,7 +8,7 @@ export default function SocketContextProvider(props){
     
     const socket = useMemo(
         ()=>
-            io('http://localhost:8001'),[]
+            io('https://video-call-app-backend-1wsq.onrender.com'),[]
     );
 
     return <SocketContext.Provider value={{socket}}>
