@@ -2,21 +2,193 @@
 @tailwind components;
 @tailwind utilities;
 
+.chat-container {
+  --s: 37px; /* control the size */
+
+  --c: #0000, #282828 0.5deg 119.5deg, #0000 120deg;
+  --g1: conic-gradient(from 60deg at 56.25% calc(425% / 6), var(--c));
+  --g2: conic-gradient(from 180deg at 43.75% calc(425% / 6), var(--c));
+  --g3: conic-gradient(from -60deg at 50% calc(175% / 12), var(--c));
+  background: var(--g1), var(--g1) var(--s) calc(1.73 * var(--s)), var(--g2),
+    var(--g2) var(--s) calc(1.73 * var(--s)), var(--g3) var(--s) 0,
+    var(--g3) 0 calc(1.73 * var(--s)) #1e1e1e;
+  background-size: calc(2 * var(--s)) calc(3.46 * var(--s));
+}
+
+/* home background */
+.bgcontainer {
+  width: 100%;
+  height: 100%;
+
+  background: #000000;
+  --gap: 5em;
+  --line: 1px;
+  --color: rgba(255, 255, 255, 0.2);
+
+  background-image: linear-gradient(
+      -90deg,
+      transparent calc(var(--gap) - var(--line)),
+      var(--color) calc(var(--gap) - var(--line) + 1px),
+      var(--color) var(--gap)
+    ),
+    linear-gradient(
+      0deg,
+      transparent calc(var(--gap) - var(--line)),
+      var(--color) calc(var(--gap) - var(--line) + 1px),
+      var(--color) var(--gap)
+    );
+  background-size: var(--gap) var(--gap);
+}
+
+/* JOIN ROOM BUTTON  */
+.btn {
+  margin-top: 3rem;
+  background-color: rgba(173, 243, 251, 0.911);
+  border-radius: 0.5rem;
+  border: none;
+  font-size: 1.2rem;
+  transition: all 400ms;
+  cursor: pointer;
+  box-shadow:
+    0 0 3px rgb(215, 249, 250),
+    0 0 3px rgb(215, 246, 250);
+}
+.btn:hover {
+  background-color: antiquewhite;
+  box-shadow: none;
+}
+
+
+.loader {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+}
+
+.loader-bar {
+  height: 25px;
+  width: 6px;
+  margin: 0 3px;
+  border-radius: 20px;
+  animation: loader 2s ease-in-out infinite;
+}
+
+.bar-1 {
+  background: linear-gradient(to right, #00e6e6, #00ccff, #0099ff, #0066ff);
+  animation-delay: 0s;
+  box-shadow: 0px 0px 15px 3px #00e6e6;
+}
+
+.bar-2 {
+  background: linear-gradient(to right, #00ccff, #0099ff, #0066ff, #00e6e6);
+  animation-delay: 0.1s;
+  box-shadow: 0px 0px 15px 3px #00ccff;
+}
+
+.bar-3 {
+  background: linear-gradient(to right, #0099ff, #0066ff, #00e6e6, #00ccff);
+  animation-delay: 0.2s;
+  box-shadow: 0px 0px 15px 3px #0099ff;
+}
+
+.bar-4 {
+  background: linear-gradient(to right, #0066ff, #00e6e6, #00ccff, #0099ff);
+  animation-delay: 0.3s;
+  box-shadow: 0px 0px 15px 3px #0066ff;
+}
+
+@keyframes loader {
+  0% {
+    transform: scaleY(1);
+  }
+
+  50% {
+    transform: scaleY(2);
+  }
+
+  100% {
+    transform: scaleY(1);
+  }
+}
+
+/* streams div  */
+.card {
+  --background: linear-gradient(to right, #13b37f 0%, #11a3c8 100%);
+  padding: 1px;
+  background: #9ff2f9;
+  background: var(--background);
+  z-index: 1;
+}
+
+.card::after {
+  position: absolute;
+  content: "";
+  top: -22px;
+  left: -22px;
+  z-index: -1;
+  height: 100%;
+  width: 100%;
+  transform: scale(0.73);
+  filter: blur(70px);
+  background: #9ff2f9;
+  background: var(--background);
+  transition: opacity 0.3s;
+}
+
+/*Hover*/
+.card:hover::after {
+  opacity: 0.6;
+  padding: 0.7rem 0;
+  top: 18px;
+  left:18px;
+  transition: 0.6s;
+}
+
+.card:hover {
+  color: #fff9f9;
+  transition: color 1s;
+}
+
+
+.buttonStyle {
+  background: #333;
+  cursor: pointer;
+  border: solid #404c5d 1px;
+  -webkit-transition: 500ms;
+  transition: 500ms;
+  background: linear-gradient(145deg, #2e2d2d, #212121);
+  -webkit-box-shadow: -1px -5px 15px #41465b, 5px 5px 15px #2a2d3b,
+    inset 5px 5px 10px #212121, inset -5px -5px 10px #212121;
+  box-shadow: -0.5px -2.5px 7.5px #282c39, 2.5px 2.5px 7.5px #41465b,
+    inset 5px 5px 10px #212121, inset -5px -5px 10px #212121;
+}
+
+.buttonStyle:hover {
+  -webkit-box-shadow: 1px 1px 13px #20232e, -1px -1px 13px #545b78;
+  box-shadow: 0.5px 0.5px 6.5px #20232e, -0.5px -0.5px 6.5px #333749;
+  color: #d6d6d6;
+  -webkit-transition: 500ms;
+  transition: 500ms;
+}
+
+.buttonStyle:active {
+  -webkit-box-shadow: 1px 1px 13px #20232e, -1px -1px 33px #303445;
+  box-shadow: 0.5px 0.5px 6.5px #20232e, -0.5px -0.5px 16.5px #34394b;
+  color: #d6d6d6;
+  -webkit-transition: 100ms;
+  transition: 100ms;
+}
+
 ::-webkit-scrollbar {
-    width: 12px;
-  }
-  ::-webkit-scrollbar-track {
-    background: #1e293b; /* Slate 900 */
-    border-radius: 9999px;
-  }
-  ::-webkit-scrollbar-thumb {
-    background-color: #475569; /* Slate 500 */
-    border-radius: 9999px;
-    border: 3px solid #1e293b;
-  }
-  ::-webkit-scrollbar-thumb:hover {
-    background-color: #64748b; /* Slate 400 */
-  }
-  .no-arrows::-webkit-scrollbar-button {
-    display: none;
-  }
+  width: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: #3b3a3a75;
+  border-radius: 4px;
+}

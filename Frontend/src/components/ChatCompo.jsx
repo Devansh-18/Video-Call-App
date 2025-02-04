@@ -4,10 +4,12 @@ import { IoIosChatbubbles } from "react-icons/io";
 import React, { useRef, useState, useEffect } from 'react'
 import { useApp } from '../context/AppContext';
 import { useSocket } from '../context/SocketContext';
+import { useParams } from "react-router-dom";
 
 const ChatCompo = () => {
     const {socket} = useSocket();
     const {isChatVisible,setIsChatVisible,roomId,username,remoteUsers,userID} = useApp();
+    const {roomID} = useParams();
 
     const chatEndRef = useRef(null);
 
@@ -31,7 +33,7 @@ const ChatCompo = () => {
             socket.off("chat-history");
             socket.off("newMessage");
         };
-    }, [socket, roomId]);
+    }, [socket, roomID]);
 
     useEffect(() => {
       if (chatEndRef.current) {
@@ -41,14 +43,15 @@ const ChatCompo = () => {
 
   //sending message
   const sendMessage = () => {
-    if (msg && roomId && userID) {
-      socket.emit('message', { sender:userID, msg, roomId });
+    console.log(roomID,userID);
+    if (msg && roomID && userID) {
+      socket.emit('message', { sender:userID, msg, roomId: roomID });
       setMsg('');
     }
   };
   return (
     isChatVisible ? (
-      <div className={`absolute top-0 right-0 bg-slate-900 shadow-lg w-full z-50 md:w-1/3 h-screen`}>
+      <div className={`absolute top-0 right-0 w-full z-50 md:w-1/3 h-screen chat-container`}>
         <div className="flex flex-col w-full h-full p-4">
           {/* Header */}
           <div className="flex items-center justify-between text-white p-4">
@@ -62,13 +65,13 @@ const ChatCompo = () => {
           </div>
   
           {/* Chat Messages */}
-          <div className={`flex-1 overflow-y-auto shadow-md bg-slate-700 p-4 space-y-2 no-arrows scrollbar-thin scrollbar-thumb-slate-500 scrollbar-track-slate-900`}
+          <div className={`flex-1 overflow-y-scroll shadow-md p-4 space-y-2`}
           style={{ maxHeight: "80vh" }}
           ref={chatEndRef}>
             {chat.map((message, index) => (
               <div
                 key={index}
-                className={`text-gray-100 font-light flex flex-col p-2 rounded-lg shadow-sm max-w-xs ${message.userId===userID?"ml-auto bg-green-900":"mr-auto bg-gray-800"}`}
+                className={`text-gray-100 font-light flex flex-col p-2 rounded-t-2xl rounded-bl-2xl shadow-sm max-w-xs ${message.userId===userID?"ml-auto bg-opacity-30 backdrop-blur-md bg-gradient-to-br from-green-500/20 to-transparent":"mr-auto bg-gray-800"}`}
                 style={{ wordWrap: "break-word" }}
               >
                 <div className="text-xs font-thin text-gray-500">
@@ -96,7 +99,7 @@ const ChatCompo = () => {
                 setMsg(e.target.value);
               }}
               placeholder="Type a message..."
-              className="flex-1 outline-none shadow-sm shadow-white bg-gray-600 text-gray-300 overflow-y-auto p-2 rounded-2xl"
+              className="flex-1 outline-none bg-opacity-30 bg-gradient-to-br from-gray-700/500 to-transparent text-gray-300 overflow-y-auto p-2 rounded-xl"
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
                   sendMessage();

@@ -20,8 +20,27 @@ const VideoCall = () => {
   const navigate = useNavigate();
   const localVideoRef = useRef(null);
   const screenSharingRef = useRef(null);
+  const popUpRef = useRef(null);
+  const buttonRef = useRef(null);
   const [isScreenSharing,setIsScreenSharing] = useState(false);
   const [isUserListVisible,setIsUserListVisible] = useState(false);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      // Ignore click if it's on the button or inside the popup
+      if (popUpRef.current && popUpRef.current.contains(event.target)) {
+        return;
+      }
+      setIsUserListVisible(false);
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+      
+  }, []);
+  
 
   useEffect(() => {
     // Request access to the user's media (video and audio)
@@ -283,14 +302,14 @@ const VideoCall = () => {
   };
   
   return (
-    <div className="relative flex flex-col gap-3 p-4 justify-center overflow-y-auto overflow-x-hidden w-screen h-screen bg-gradient-to-br from-gray-900 to-gray-700 text-white"> 
-      <div className={`relative overflow-hidden gap-0 md:row-gap-4 col-gap-4 ml-0 ${isChatVisible ? "md:w-2/3" : "w-[100%]"} h-[80%] sm:h-auto items-center justify-center`}style={{display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", placeItems:"center"}}>
+    <div className={` ${isChatVisible ? "md:w-2/3" : "w-screen"} flex flex-col gap-3 p-4 min-h-screen justify-center items-center overflow-y-auto overflow-x-hidden bg-gradient-to-tl from-black to-neutral-900 text-white`}> 
+      <div className={`relative  gap-0  md:row-gap-4 col-gap-4 ml-0 max-h-full max-w-full h-fit w-fit items-center justify-center`}style={{display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))"}}>
         {/* Local Video Stream */}
           {localStream ? (
-            <div className="relative md:rounded-lg md:border-4 max-w-[90%] max-h-[90%] w-fit overflow-hidden flex justify-center items-center md:border-blue-500 aspect-[4/3]" >
+            <div className="relative rounded-lg card mx-auto max-w-[90%] max-h-[90%] w-fit flex justify-center items-center aspect-[4/3]" >
               <video
                 ref={localVideoRef}
-                className="object-cover"
+                className="object-cover rounded-lg"
                 autoPlay
                 muted
               />
@@ -302,19 +321,18 @@ const VideoCall = () => {
                     You are muted
                   </div>
               )}
-              <div className="absolute top-2 text-sm md:text-base left-2 z-10 bg-black bg-opacity-50 text-white px-2 py-1 rounded">
+              <div className="absolute top-2 max-w-[70%] overflow-clip text-sm md:text-base left-2 z-10 bg-black bg-opacity-50 text-white px-2 py-1 rounded">
                 {`${username} (Me)`}
               </div>
             </div>
           ) : (
             <div className="w-auto flex flex-col justify-center items-center mx-auto py-4 h-auto relative max-w-full max-h-full">
-             <div role="status">
-              <svg aria-hidden="true" className="inline w-12 h-12 text-gray-200 animate-spin dark:text-gray-600 fill-yellow-400" viewBox="0 0 100 101" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z" fill="currentColor"/>
-                  <path d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0491C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z" fill="currentFill"/>
-              </svg>
-              <span className="sr-only">Loading...</span>
-             </div>
+              <div className="loader">
+                <div className="loader-bar bar-1"></div>
+                <div className="loader-bar bar-2"></div>
+                <div className="loader-bar bar-3"></div>
+                <div className="loader-bar bar-4"></div>
+              </div>
              <div className="px-3 my-6 py-4 text-2xl font-medium leading-none text-center text-yellow-400 rounded-full animate-pulse">Loading Local Stream...</div>
             </div>
           )}
@@ -325,13 +343,13 @@ const VideoCall = () => {
               const videoTrack = stream.getVideoTracks()[0];
               const remoteUsername = remoteUsers.find(user => user.userId === userId)?.username || "Unknown User";
               return (
-                <div key={userId} className="relative w-fit h-auto max-h-[90%] max-w-[90%] overflow-hidden flex items-center justify-center md:rounded-lg md:border-4 aspect-[4/3]">
+                <div key={userId} className="relative rounded-lg card max-w-[90%] max-h-[90%] w-fit flex mx-auto justify-center items-center aspect-[4/3]">
                   {videoTrack && (
                     <video
                       ref={(video) => {
                         if (video && stream && video.srcObject !== stream) video.srcObject = stream;
                       }}
-                      className="object-cover"
+                      className="object-cover rounded-lg w-fit h-fit"
                       autoPlay
                     />
                   )}
@@ -339,7 +357,7 @@ const VideoCall = () => {
                       <img className="absolute -top-16 left-0 overflow-hidden object-none w-fit h-fit " src={`https://api.dicebear.com/5.x/initials/svg?seed=${remoteUsername}`}/>
                   )}
                   {!audioState && (
-                    <div className="absolute bottom-5 left-50 font-normal text-white bg-black bg-opacity-25 py-1 px-2 md:px-4 rounded-full text-sm md:text-base" style={{"textShadow":"0px 0px 6px #00ccff"}}>
+                    <div className="absolute bottom-5 left-50 font-normal text-white bg-black bg-opacity-50 py-1 px-2 md:px-4 rounded-lg text-sm md:text-base" style={{"textShadow":"0px 0px 6px #00ccff"}}>
                       {remoteUsername} is muted
                     </div>
                   )}
@@ -353,29 +371,29 @@ const VideoCall = () => {
       </div>
 
       {/* Controls: Mute/Unmute, Video On/Off */}
-      <div className={`fixed bottom-4 max-w-full z-50 ${isChatVisible ? "md:w-2/3" : "w-full"} md:static flex flex-wrap item-center justify-center space-x-1 md:space-x-4`}>
+      <div className={`fixed bottom-4 max-w-full z-40 md:static md:my-2 flex flex-wrap item-center justify-center space-x-1 md:space-x-4`}>
         <button
           onClick={toggleMute}
-          className="bg-red-500 hover:bg-red-600 text-white py-2 px-3 md:py-3 md:px-6 rounded-lg shadow-md text-sm md:text-lg font-semibold flex items-center justify-center"
+          className="buttonStyle text-blue-400 py-2 px-3 md:py-3 md:px-6 rounded-lg shadow-md text-sm md:text-lg font-semibold flex items-center justify-center"
         >
           {isMicOn ? <FaMicrophone className="text-sm md:text-2xl" /> : <FaMicrophoneSlash className="text-lg md:text-2xl" />}
         </button>
 
         <button
           onClick={toggleVideo}
-          className="bg-blue-500 hover:bg-blue-600 text-white py-2 px-3 md:py-3 md:px-6 rounded-lg shadow-md text-sm md:text-lg font-semibold flex items-center justify-center"
+          className="buttonStyle text-green-400 py-2 px-3 md:py-3 md:px-6 rounded-lg shadow-md text-sm md:text-lg font-semibold flex items-center justify-center"
         >
           {isVideoOn ? <FaVideo className="text-sm md:text-2xl" /> : <FaVideoSlash className="text-lg md:text-2xl" />}
         </button>
         <button
           onClick={toggleScreenSharing}
-          className="bg-blue-500 hover:bg-blue-600 text-white py-2 px-3 md:py-3 md:px-6 rounded-lg shadow-md text-sm md:text-lg font-semibold flex items-center justify-center"
+          className="buttonStyle text-blue-300 py-2 px-3 md:py-3 md:px-6 rounded-lg shadow-md text-sm md:text-lg font-semibold flex items-center justify-center"
         >
           {isScreenSharing ? <MdOutlineScreenShare className="text-sm md:text-2xl" /> : <MdOutlineStopScreenShare className="text-lg md:text-2xl" />}
         </button>
         <button
           onClick={toggleUserList}
-          className="relative bg-blue-500 hover:bg-blue-600 text-white py-2 px-3 md:py-3 md:px-6 rounded-lg shadow-md text-sm md:text-lg font-semibold flex items-center justify-center"
+          className="relative buttonStyle text-purple-300 py-2 px-3 md:py-3 md:px-6 rounded-lg shadow-md text-sm md:text-lg font-semibold flex items-center justify-center"
         >
           <MdGroups2 className="text-lg md:text-2xl" />
           <p className="absolute bottom-[24px] md:bottom-[35px] right-[-5px] rounded-full bg-red-500 text-white text-s font-semibold px-2">
@@ -385,7 +403,7 @@ const VideoCall = () => {
         
         <button
           onClick={disconnectCall} 
-          className="bg-red-600 hover:bg-red-700 text-white py-2 px-3 md:py-3 md:px-6 rounded-lg shadow-md text-sm md:text-lg font-semibold flex items-center justify-center gap-2"
+          className="buttonStyle text-red-600 py-2 px-3 md:py-3 md:px-6 rounded-lg shadow-md text-sm md:text-lg font-semibold flex items-center justify-center"
         >
           <MdCallEnd className="text-sm md:text-2xl" />
         </button>
@@ -396,9 +414,9 @@ const VideoCall = () => {
 
       {
         isUserListVisible && (
-            <div className={`fixed left-0 top-0 h-screen w-screen z-30 bg-black inset-0 bg-opacity-10 backdrop-blur-lg flex flex-col items-center justify-center transition-transform transform duration-500 ease-in-out ${isUserListVisible ? "translate-x-0" : "translate-x-full"
+            <div className={`fixed left-0 top-0 h-screen ${isChatVisible?"md:w-2/3 w-screen":"w-screen"} z-50 bg-black inset-0 bg-opacity-10 backdrop-blur-lg flex flex-col items-center justify-center transition-transform transform duration-500 ease-in-out ${isUserListVisible ? "translate-x-0" : "translate-x-full"
             }`}>
-              <div className="h-fit left-[50%] top[50%] w-72 bg-gray-900 p-4 text-white flex flex-col items-start justify-start">
+              <div ref={popUpRef} className="h-fit left-[50%] top[50%] w-72 bg-gray-900 p-4 text-white flex flex-col items-start justify-start">
                 <h1 className="text-xl font-semibold">Remote Users</h1>
                 <button onClick={toggleUserList} className="absolute z-50 top-5 right-5 text-white rounded-lg p-2 font-bold">
                   <RxCross1 size={24}/>

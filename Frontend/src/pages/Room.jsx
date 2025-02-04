@@ -3,7 +3,7 @@ import VideoCall from '../components/VideoCall/VideoCall'
 
 const Room = () => {
   return (
-    <div className='flex h-full w-full justify-center items-center'>
+    <div className='relative flex h-full w-full justify-start items-center'>
       <VideoCall/>
     </div>
   )

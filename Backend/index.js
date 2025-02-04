@@ -35,7 +35,7 @@ io.on('connection',(socket)=>{
       console.log(`User connected with id ${socket.id}`);
 
       socket.on("join-room", ({ roomId,username }) => {
-        const userId = socket.id; 
+        const userId = socket.id;
         //join room 
         const room = io.sockets.adapter.rooms.get(roomId);
         if (room && room.has(socket.id)) {
@@ -108,7 +108,6 @@ io.on('connection',(socket)=>{
       socket.on('message', ({ sender, msg, roomId }) => {
         const chatMessage = { userId: sender, message:msg, timestamp: new Date() };
         roomChats[roomId].push(chatMessage); // Store message in the room's chat history
-        console.log(`Sending message`,chatMessage);
         io.to(roomId).emit('newMessage', chatMessage); // Broadcast the message to the room
       });
     
