@@ -4,12 +4,10 @@ import { IoIosChatbubbles } from "react-icons/io";
 import React, { useRef, useState, useEffect } from 'react'
 import { useApp } from '../context/AppContext';
 import { useSocket } from '../context/SocketContext';
-import { useParams } from "react-router-dom";
 
 const ChatCompo = () => {
     const {socket} = useSocket();
     const {isChatVisible,setIsChatVisible,roomId,username,remoteUsers,userID} = useApp();
-    const {roomID} = useParams();
 
     const chatEndRef = useRef(null);
 
@@ -33,7 +31,7 @@ const ChatCompo = () => {
             socket.off("chat-history");
             socket.off("newMessage");
         };
-    }, [socket, roomID]);
+    }, [socket, roomId]);
 
     useEffect(() => {
       if (chatEndRef.current) {
@@ -43,9 +41,9 @@ const ChatCompo = () => {
 
   //sending message
   const sendMessage = () => {
-    console.log(roomID,userID);
-    if (msg && roomID && userID) {
-      socket.emit('message', { sender:userID, msg, roomId: roomID });
+    console.log(roomId,userID);
+    if (msg && roomId && userID) {
+      socket.emit('message', { sender:userID, msg, roomId });
       setMsg('');
     }
   };
@@ -71,7 +69,7 @@ const ChatCompo = () => {
             {chat.map((message, index) => (
               <div
                 key={index}
-                className={`text-gray-100 font-light flex flex-col p-2 rounded-t-2xl rounded-bl-2xl shadow-sm max-w-xs ${message.userId===userID?"ml-auto bg-opacity-30 backdrop-blur-md bg-gradient-to-br from-green-500/20 to-transparent":"mr-auto bg-gray-800"}`}
+                className={`text-gray-100 font-light flex flex-col p-2 rounded-t-2xl rounded-bl-2xl shadow-sm max-w-xs ${message.userId===userID?"ml-auto bg-opacity-30 backdrop-blur-md bg-gradient-to-br from-green-500/20 to-transparent":"mr-auto bg-opacity-30 backdrop-blur-md bg-gradient-to-br from-gray-800 to-transparent"}`}
                 style={{ wordWrap: "break-word" }}
               >
                 <div className="text-xs font-thin text-gray-500">

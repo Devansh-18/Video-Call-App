@@ -6,7 +6,6 @@ import { MdCallEnd } from "react-icons/md";
 import { useSocket } from "../../context/SocketContext";
 import { useRTC } from "../../context/RTCContext";
 import { useNavigate } from "react-router-dom";
-import { useMemo } from "react";
 import { useApp } from "../../context/AppContext";
 import ChatCompo from "../ChatCompo";
 import { RxCross1 } from "react-icons/rx";
@@ -21,7 +20,6 @@ const VideoCall = () => {
   const localVideoRef = useRef(null);
   const screenSharingRef = useRef(null);
   const popUpRef = useRef(null);
-  const buttonRef = useRef(null);
   const [isScreenSharing,setIsScreenSharing] = useState(false);
   const [isUserListVisible,setIsUserListVisible] = useState(false);
 
@@ -47,11 +45,6 @@ const VideoCall = () => {
     navigator.mediaDevices
       .getUserMedia({ video: true, audio: true })
       .then((stream) => {
-        console.log(stream);
-        // const audioTrack = stream.getTracks().find(track=>track.kind === 'audio');
-        // if(audioTrack){
-        //   audioTrack.enabled = false;
-        // }
         setLocalStream(stream);
       })
       .catch((error) => {
@@ -74,19 +67,26 @@ const VideoCall = () => {
     }
   },[localStream]);
 
-  useEffect(() => {
-    if (!socket ) return;
-
+  useEffect(()=>{
+    if(!socket) return;
     // Listen for the "user-id" event and set the userId state with the received ID
     socket.on("user-id", ({id,users}) => {
+      console.log("id",id);
       setUserID(id);
+      console.log("userID",userID);
       const filteredUsers = users.filter(user => user.userId !== id);
       setRemoteUsers(filteredUsers);
     });
+    return () => {
+      socket.off("user-id");
+    };
+  },[socket,roomId]);
+
+  useEffect(() => {
+    if (!socket ) return;
 
     // Listen for the "user-joined" event
     socket.on("user-joined", ({userId,users}) => {
-      console.log("userid",userID);
       const filteredUsers = users.filter(user => user.userId !== userID);
       setRemoteUsers(filteredUsers);
       if (localStream) {
@@ -162,13 +162,12 @@ const VideoCall = () => {
     });
 
     return () => {
-      socket.off("user-id");
       socket.off("user-joined");
       socket.off("signal");
       socket.off("toggle");
       socket.off("leave-room");
     };
-  }, [socket,localStream, roomId]);
+  }, [socket,localStream,userID,roomId]);
 
   // Function to handle disconnecting the call
   const disconnectCall = () => {
@@ -216,7 +215,7 @@ const VideoCall = () => {
     }
   };
 
-
+  // toggle screen sharing 
   const toggleScreenSharing = () => {
     if (!isVideoOn) {
       toast.error("Open Video First");
@@ -302,14 +301,33 @@ const VideoCall = () => {
   };
   
   return (
-    <div className={` ${isChatVisible ? "md:w-2/3" : "w-screen"} flex flex-col gap-3 p-4 min-h-screen justify-center items-center overflow-y-auto overflow-x-hidden bg-gradient-to-tl from-black to-neutral-900 text-white`}> 
-      <div className={`relative  gap-0  md:row-gap-4 col-gap-4 ml-0 max-h-full max-w-full h-fit w-fit items-center justify-center`}style={{display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))"}}>
+    <div className={` ${isChatVisible ? "md:w-2/3 w-screen" : "w-screen"} flex flex-col gap-3 p-4 h-screen justify-center items-center overflow-y-hidden overflow-x-hidden bg-gradient-to-tl from-black to-neutral-900 text-white`}>
+      <div className={`relative w-[95%] h-[90%]  gap-4 overflow-x-hidden overflow-y-scroll max-h-[90%] max-w-[90%] items-center justify-center 
+        ${Object.entries(remoteStreams).length+1==1?"flex item-center justify-center"
+        :Object.entries(remoteStreams).length+1==2?"grid gap-4 landscape:grid-cols-2 landscape:grid-rows-1 grid-cols-1 grid-rows-2"
+        :Object.entries(remoteStreams).length+1==3?"grid gap-4 landscape:grid-cols-2 landscape:grid-rows-2 grid-cols-1 grid-rows-3"
+        :Object.entries(remoteStreams).length+1==4?"grid gap-4 grid-cols-2 grid-rows-2"
+        :"grid grid-cols-3 gap-4"}`}>
         {/* Local Video Stream */}
           {localStream ? (
-            <div className="relative rounded-lg card mx-auto max-w-[90%] max-h-[90%] w-fit flex justify-center items-center aspect-[4/3]" >
+            <div className={`relative rounded-lg overflow-x-hidden card mx-auto flex justify-center items-center
+              ${Object.entries(remoteStreams).length+1==1?"max-w-[90%] max-h-[90%]"
+                :Object.entries(remoteStreams).length+1==2?"max-h-[95%] landscape:max-w-[95%]"
+                :Object.entries(remoteStreams).length+1==3?"landscape:max-w-[95%] landscape:max-h-[95%] max-h-[95%] max-w-[95%]"
+                :Object.entries(remoteStreams).length+1==4?"max-h-[95%] max-w-[95%]"
+                :"max-w-[95%] max-h-auto"}
+              ${
+              Object.entries(remoteStreams).length + 1 === 1 || Object.entries(remoteStreams).length + 1 === 4
+                ? "aspect-[3/4] xs:aspect-[4/3]"
+                : "aspect-[4/3]"
+            }`} >
               <video
                 ref={localVideoRef}
-                className="object-cover rounded-lg"
+                className={`object-cover rounded-lg max-h-full max-w-full ${
+                  Object.entries(remoteStreams).length + 1 === 1 || Object.entries(remoteStreams).length + 1 === 4
+                    ? "aspect-[3/4] xs:aspect-[4/3]"
+                    : "aspect-[4/3]"
+                }`}
                 autoPlay
                 muted
               />
@@ -317,7 +335,7 @@ const VideoCall = () => {
                   <img className="absolute -top-16 left-0 overflow-hidden object-none w-fit h-fit" src={`https://api.dicebear.com/5.x/initials/svg?seed=${username}`}/>
               )}
               {!isMicOn && (
-                  <div className="absolute bottom-5 font-normal text-white bg-black bg-opacity-50 py-1 px-2 md:px-4 rounded-lg md:ml-2 text-sm md:text-base mx-auto" style={{"textShadow":"0px 0px 6px #00ccff"}}>
+                  <div className="absolute z-10 max-w-[90%] overflow-hidden bottom-5 font-normal text-white bg-black bg-opacity-50 py-1 px-2 md:px-4 rounded-lg md:ml-2 text-sm md:text-base mx-auto" style={{"textShadow":"0px 0px 6px #00ccff"}}>
                     You are muted
                   </div>
               )}
@@ -343,13 +361,26 @@ const VideoCall = () => {
               const videoTrack = stream.getVideoTracks()[0];
               const remoteUsername = remoteUsers.find(user => user.userId === userId)?.username || "Unknown User";
               return (
-                <div key={userId} className="relative rounded-lg card max-w-[90%] max-h-[90%] w-fit flex mx-auto justify-center items-center aspect-[4/3]">
+                <div key={userId} className={`relative rounded-lg card flex mx-auto justify-center items-center ${
+                  Object.entries(remoteStreams).length + 1 === 1 || Object.entries(remoteStreams).length + 1 === 4
+                  ? "aspect-[3/4] xs:aspect-[4/3]"
+                  : "aspect-[4/3]"
+                }
+                ${Object.entries(remoteStreams).length+1==1?"w-[90%]"
+                :Object.entries(remoteStreams).length+1==2?"max-h-[95%] landscape:max-w-[95%]"
+                :Object.entries(remoteStreams).length+1==3?"landscape:max-w-[95%] landscape:max-h-[95%] max-h-[95%] max-w-[95%]"
+                :Object.entries(remoteStreams).length+1==4?"max-h-[95%] max-w-[95%]"
+                :"max-w-[95%] max-h-auto"}`}>
                   {videoTrack && (
                     <video
                       ref={(video) => {
                         if (video && stream && video.srcObject !== stream) video.srcObject = stream;
                       }}
-                      className="object-cover rounded-lg w-fit h-fit"
+                      className={`object-cover rounded-lg max-h-full ${
+                        Object.entries(remoteStreams).length + 1 === 1 || Object.entries(remoteStreams).length + 1 === 4
+                          ? "aspect-[3/4] xs:aspect-[4/3]"
+                          : "aspect-[4/3]"
+                      }`}
                       autoPlay
                     />
                   )}
@@ -371,7 +402,7 @@ const VideoCall = () => {
       </div>
 
       {/* Controls: Mute/Unmute, Video On/Off */}
-      <div className={`fixed bottom-4 max-w-full z-40 md:static md:my-2 flex flex-wrap item-center justify-center space-x-1 md:space-x-4`}>
+      <div className={`fixed bottom-[4%] max-w-full z-40 md:static md:my-2 flex flex-wrap item-center justify-center space-x-1 md:space-x-4`}>
         <button
           onClick={toggleMute}
           className="buttonStyle text-blue-400 py-2 px-3 md:py-3 md:px-6 rounded-lg shadow-md text-sm md:text-lg font-semibold flex items-center justify-center"
@@ -416,15 +447,15 @@ const VideoCall = () => {
         isUserListVisible && (
             <div className={`fixed left-0 top-0 h-screen ${isChatVisible?"md:w-2/3 w-screen":"w-screen"} z-50 bg-black inset-0 bg-opacity-10 backdrop-blur-lg flex flex-col items-center justify-center transition-transform transform duration-500 ease-in-out ${isUserListVisible ? "translate-x-0" : "translate-x-full"
             }`}>
-              <div ref={popUpRef} className="h-fit left-[50%] top[50%] w-72 bg-gray-900 p-4 text-white flex flex-col items-start justify-start">
-                <h1 className="text-xl font-semibold">Remote Users</h1>
+              <div ref={popUpRef} className="h-fit left-[50%] top[50%] w-72 bg-gradient-to-tl bg-opacity-70 from-gray-900 p-4 text-white flex flex-col items-start justify-start">
+                <h1 className="text-xl font-semibold">Connected People</h1>
                 <button onClick={toggleUserList} className="absolute z-50 top-5 right-5 text-white rounded-lg p-2 font-bold">
                   <RxCross1 size={24}/>
                 </button>
               <div className="my-1">
                 <ul className="flex flex-wrap gap-2 items-start justify-start">
                   {remoteUsers.length === 0 ? (
-                    <li className="text-gray-300">No users in the room</li>
+                    <li className="text-gray-300">No Connected User</li>
                    ) : (
                     remoteUsers.map((user) => (
                       <li key={user.userId} className="px-2 py-1 hover:bg-slate-700 my-2 border w-full border-yellow-600 rounded-lg">{

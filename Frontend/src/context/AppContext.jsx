@@ -9,7 +9,7 @@ export default function AppContextProvider({children}){
     const [isMicOn, setIsMicOn] = useState(false);
     const [username,setUsername] = useState('');
     const [roomId,setRoomId] = useState('');
-    const [userID,setUserID] = useState(null);
+    const [userID,setUserID] = useState('');
     const [isChatVisible,setIsChatVisible] = useState(false);
 
     const value = {

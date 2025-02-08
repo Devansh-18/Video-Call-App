@@ -6,7 +6,6 @@ import toast from "react-hot-toast";
 
 const HomeCompo = () => {
   const {roomID} = useParams();
-  const {socket} = useSocket();
   const {username,setUsername,roomId,setRoomId} = useApp();
   const navigate = useNavigate();
 
@@ -22,7 +21,6 @@ const HomeCompo = () => {
       console.log("username",username,roomId);
       navigate(`/room`);
       console.log(username,roomId);
-      console.log(socket.id);
     } 
     else {
       toast.error("Please enter both name and room ID");

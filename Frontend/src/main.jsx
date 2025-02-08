@@ -9,7 +9,7 @@ import SocketContextProvider from './context/SocketContext.jsx'
 import AppContextProvider from './context/AppContext.jsx'
 
 createRoot(document.getElementById('root')).render(
-  <StrictMode>
+  // <StrictMode>
     <BrowserRouter>
       <SocketContextProvider>
         <AppContextProvider>
@@ -20,5 +20,5 @@ createRoot(document.getElementById('root')).render(
         </AppContextProvider>
       </SocketContextProvider>
     </BrowserRouter>
-  </StrictMode>,
+  // </StrictMode>,
 )
