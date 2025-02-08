@@ -10,7 +10,7 @@ const PORT = process.env.PORT;
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: "*",
+    origin: "https://seeyouhere.netlify.app",
     methods: ["GET", "POST"],
   },
 });
@@ -18,7 +18,7 @@ app.use(bodyParser.json());
 app.use(express.json());
 app.use(
     cors({
-        origin:"http://localhost:5173",
+        origin:"https://seeyouhere.netlify.app",
         credentials:true,
     })
 );
