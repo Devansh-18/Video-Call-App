@@ -307,7 +307,7 @@ const VideoCall = () => {
         :Object.entries(remoteStreams).length+1==2?"grid gap-4 landscape:grid-cols-2 landscape:grid-rows-1 grid-cols-1 grid-rows-2"
         :Object.entries(remoteStreams).length+1==3?"grid gap-4 landscape:grid-cols-2 landscape:grid-rows-2 grid-cols-1 grid-rows-3"
         :Object.entries(remoteStreams).length+1==4?"grid gap-4 grid-cols-2 grid-rows-2"
-        :"grid grid-cols-3 gap-4"}`}>
+        :"grid grid-cols-3 grid-flow-row gap-4"}`}>
         {/* Local Video Stream */}
           {localStream ? (
             <div className={`relative rounded-lg overflow-x-hidden card mx-auto flex justify-center items-center
@@ -315,7 +315,7 @@ const VideoCall = () => {
                 :Object.entries(remoteStreams).length+1==2?"max-h-[95%] landscape:max-w-[95%]"
                 :Object.entries(remoteStreams).length+1==3?"landscape:max-w-[95%] landscape:max-h-[95%] max-h-[95%] max-w-[95%]"
                 :Object.entries(remoteStreams).length+1==4?"max-h-[95%] max-w-[95%]"
-                :"max-w-[95%] max-h-auto"}
+                :"max-w-[95%] max-h-[90%]"}
               ${
               Object.entries(remoteStreams).length + 1 === 1 || Object.entries(remoteStreams).length + 1 === 4
                 ? "aspect-[3/4] xs:aspect-[4/3]"
@@ -332,7 +332,7 @@ const VideoCall = () => {
                 muted
               />
               {!isVideoOn && (
-                  <img className="absolute -top-16 left-0 overflow-hidden object-none w-fit h-fit" src={`https://api.dicebear.com/5.x/initials/svg?seed=${username}`}/>
+                  <img className="absolute top-0 left-0 translate-x-1/2 translate-y-1/2 overflow-hidden object-none w-fit h-fit" src={`https://api.dicebear.com/5.x/initials/svg?seed=${username}`}/>
               )}
               {!isMicOn && (
                   <div className="absolute z-10 max-w-[90%] overflow-hidden bottom-5 font-normal text-white bg-black bg-opacity-50 py-1 px-2 md:px-4 rounded-lg md:ml-2 text-sm md:text-base mx-auto" style={{"textShadow":"0px 0px 6px #00ccff"}}>
@@ -366,11 +366,11 @@ const VideoCall = () => {
                   ? "aspect-[3/4] xs:aspect-[4/3]"
                   : "aspect-[4/3]"
                 }
-                ${Object.entries(remoteStreams).length+1==1?"w-[90%]"
+                ${Object.entries(remoteStreams).length+1==1?"max-w-[90%] max-h-[90%]"
                 :Object.entries(remoteStreams).length+1==2?"max-h-[95%] landscape:max-w-[95%]"
                 :Object.entries(remoteStreams).length+1==3?"landscape:max-w-[95%] landscape:max-h-[95%] max-h-[95%] max-w-[95%]"
                 :Object.entries(remoteStreams).length+1==4?"max-h-[95%] max-w-[95%]"
-                :"max-w-[95%] max-h-auto"}`}>
+                :"max-w-[95%] max-h-[90%]"}`}>
                   {videoTrack && (
                     <video
                       ref={(video) => {
@@ -385,7 +385,7 @@ const VideoCall = () => {
                     />
                   )}
                   {!videoState && (
-                      <img className="absolute -top-16 left-0 overflow-hidden object-none w-fit h-fit " src={`https://api.dicebear.com/5.x/initials/svg?seed=${remoteUsername}`}/>
+                      <img className="absolute top-0 left-0 translate-x-1/2 translate-y-1/2 overflow-hidden object-none w-fit h-fit " src={`https://api.dicebear.com/5.x/initials/svg?seed=${remoteUsername}`}/>
                   )}
                   {!audioState && (
                     <div className="absolute bottom-5 left-50 font-normal text-white bg-black bg-opacity-50 py-1 px-2 md:px-4 rounded-lg text-sm md:text-base" style={{"textShadow":"0px 0px 6px #00ccff"}}>
@@ -470,8 +470,6 @@ const VideoCall = () => {
           )
       }
     </div>
-
-
   );
 };
 

@@ -1,12 +1,11 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useApp } from "../context/AppContext";
-import { useSocket } from "../context/SocketContext";
 import toast from "react-hot-toast";
 
 const HomeCompo = () => {
   const {roomID} = useParams();
-  const {username,setUsername,roomId,setRoomId} = useApp();
+  const {username,setUsername,roomId,setRoomId,handleCopyLink} = useApp();
   const navigate = useNavigate();
 
   useEffect(()=>{
@@ -24,18 +23,6 @@ const HomeCompo = () => {
     } 
     else {
       toast.error("Please enter both name and room ID");
-    }
-  };
-
-  const handleCopyLink = (e) => {
-    e.preventDefault();
-    if (roomId) {
-      const roomLink = `${window.location.origin}/${roomId}`;
-      navigator.clipboard.writeText(roomLink);
-      toast.success("Link Copied");
-    }
-    else {
-      toast.error("Please enter a Room ID first");
     }
   };
 
