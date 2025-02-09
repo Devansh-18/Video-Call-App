@@ -310,7 +310,7 @@ const VideoCall = () => {
         :"grid grid-cols-3 grid-flow-row gap-4"}`}>
         {/* Local Video Stream */}
           {localStream ? (
-            <div className={`relative rounded-lg overflow-hidden card mx-auto flex justify-center items-center
+            <div className={`relative rounded-lg overflow-hidden card flex justify-center items-center
               ${Object.entries(remoteStreams).length+1==1?"max-w-[90%] max-h-[90%]"
                 :Object.entries(remoteStreams).length+1==2?"max-h-[95%] landscape:max-w-[95%]"
                 :Object.entries(remoteStreams).length+1==3?"landscape:max-w-[95%] landscape:max-h-[95%] max-h-[95%] max-w-[95%]"
@@ -328,6 +328,7 @@ const VideoCall = () => {
                     ? "aspect-[3/4] xs:aspect-[4/3]"
                     : "aspect-[4/3]"
                 }`}
+                style={{ transform: "scaleX(-1)" }}
                 autoPlay
                 muted
               />
@@ -361,7 +362,7 @@ const VideoCall = () => {
               const videoTrack = stream.getVideoTracks()[0];
               const remoteUsername = remoteUsers.find(user => user.userId === userId)?.username || "Unknown User";
               return (
-                <div key={userId} className={`relative rounded-lg overflow-hidden card flex mx-auto justify-center items-center ${
+                <div key={userId} className={`relative rounded-lg overflow-hidden card flex justify-center items-center ${
                   Object.entries(remoteStreams).length + 1 === 1 || Object.entries(remoteStreams).length + 1 === 4
                   ? "aspect-[3/4] xs:aspect-[4/3]"
                   : "aspect-[4/3]"
@@ -376,11 +377,12 @@ const VideoCall = () => {
                       ref={(video) => {
                         if (video && stream && video.srcObject !== stream) video.srcObject = stream;
                       }}
-                      className={`object-cover rounded-lg max-h-full ${
+                      className={`object-cover rounded-lg max-w-full max-h-full ${
                         Object.entries(remoteStreams).length + 1 === 1 || Object.entries(remoteStreams).length + 1 === 4
                           ? "aspect-[3/4] xs:aspect-[4/3]"
                           : "aspect-[4/3]"
                       }`}
+                      style={{ transform: "scaleX(-1)" }}
                       autoPlay
                     />
                   )}
