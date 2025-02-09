@@ -310,7 +310,7 @@ const VideoCall = () => {
         :"grid grid-cols-3 grid-flow-row gap-4"}`}>
         {/* Local Video Stream */}
           {localStream ? (
-            <div className={`relative rounded-lg overflow-x-hidden card mx-auto flex justify-center items-center
+            <div className={`relative rounded-lg overflow-hidden card mx-auto flex justify-center items-center
               ${Object.entries(remoteStreams).length+1==1?"max-w-[90%] max-h-[90%]"
                 :Object.entries(remoteStreams).length+1==2?"max-h-[95%] landscape:max-w-[95%]"
                 :Object.entries(remoteStreams).length+1==3?"landscape:max-w-[95%] landscape:max-h-[95%] max-h-[95%] max-w-[95%]"
@@ -332,7 +332,7 @@ const VideoCall = () => {
                 muted
               />
               {!isVideoOn && (
-                  <img className="absolute top-0 left-0 translate-x-1/2 translate-y-1/2 overflow-hidden object-none w-fit h-fit" src={`https://api.dicebear.com/5.x/initials/svg?seed=${username}`}/>
+                  <img className="absolute max-w-full max-h-full top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 overflow-hidden object-none w-fit h-fit" src={`https://api.dicebear.com/5.x/initials/svg?seed=${username}`}/>
               )}
               {!isMicOn && (
                   <div className="absolute z-10 max-w-[90%] overflow-hidden bottom-5 font-normal text-white bg-black bg-opacity-50 py-1 px-2 md:px-4 rounded-lg md:ml-2 text-sm md:text-base mx-auto" style={{"textShadow":"0px 0px 6px #00ccff"}}>
@@ -361,7 +361,7 @@ const VideoCall = () => {
               const videoTrack = stream.getVideoTracks()[0];
               const remoteUsername = remoteUsers.find(user => user.userId === userId)?.username || "Unknown User";
               return (
-                <div key={userId} className={`relative rounded-lg card flex mx-auto justify-center items-center ${
+                <div key={userId} className={`relative rounded-lg overflow-hidden card flex mx-auto justify-center items-center ${
                   Object.entries(remoteStreams).length + 1 === 1 || Object.entries(remoteStreams).length + 1 === 4
                   ? "aspect-[3/4] xs:aspect-[4/3]"
                   : "aspect-[4/3]"
@@ -385,7 +385,7 @@ const VideoCall = () => {
                     />
                   )}
                   {!videoState && (
-                      <img className="absolute top-0 left-0 translate-x-1/2 translate-y-1/2 overflow-hidden object-none w-fit h-fit " src={`https://api.dicebear.com/5.x/initials/svg?seed=${remoteUsername}`}/>
+                      <img className="absolute max-w-full max-h-full top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 overflow-hidden object-none w-fit h-fit " src={`https://api.dicebear.com/5.x/initials/svg?seed=${remoteUsername}`}/>
                   )}
                   {!audioState && (
                     <div className="absolute bottom-5 left-50 font-normal text-white bg-black bg-opacity-50 py-1 px-2 md:px-4 rounded-lg text-sm md:text-base" style={{"textShadow":"0px 0px 6px #00ccff"}}>
